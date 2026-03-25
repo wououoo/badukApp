@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(grep info\\\\|error\\\\|warning:*)",
+      "Bash(grep error:*)",
+      "Bash(grep error :*)",
+      "Bash(head:*)",
+      "Bash(cd D:/git/baduk/baduk_app && flutter analyze lib/features/club/screens/club_detail_screen.dart lib/features/club/screens/club_edit_screen.dart lib/data/models/club.dart lib/data/services/club_service.dart 2>&1)",
+      "Bash(cd D:/git/baduk/baduk_app && flutter analyze lib/features/club/ lib/data/models/club_photo.dart lib/data/models/club_schedule.dart lib/data/services/club_service.dart lib/routing/app_router.dart 2>&12)",
+      "Bash(find D:\\\\git\\\\baduk\\\\baduk_app\\\\lib\\\\features\\\\club:*)",
+      "Bash(ls:*)",
+      "Bash(find D:\\\\git\\\\baduk\\\\baduk_app\\\\lib:*)",
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "Bash(cd /d/git/baduk/baduk_app && flutter analyze lib/features/profile/screens/profile_screen.dart 2>&1)",
+      "Bash(test:*)",
+      "Bash(find D:\\\\git\\\\baduk\\\\baduk_app:*)",
+      "Bash(cd D:/git/baduk/baduk_app && flutter pub get 2>&1)",
+      "Bash(grep warning:*)",
+      "Bash(cd D:/git/baduk/baduk_app && flutter analyze lib/features/main/main_screen.dart 2>&1)",
+      "Bash(find:*)",
+      "Bash(where flutter:*)",
+      "Bash(flutter analyze)",
+      "Bash(cd D:/git/baduk/baduk_app && python /tmp/fix_const.py . 2>&1)",
+      "Bash(python:*)",
+      "Bash(tail:*D:\\\\git\\\\baduk\\\\badukDistribution\\\\src\\\\main\\\\frontend\\\\my-app)"
+    ]
+  }
+}

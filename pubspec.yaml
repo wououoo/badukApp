@@ -1,0 +1,114 @@
+name: baduk_app
+description: "바둑 대회 앱 - 대회 조회, 신청, 결제, 이력 관리"
+publish_to: 'none'
+
+version: 1.1.2+38
+
+environment:
+  sdk: '>=3.3.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.6
+
+  # 상태관리
+  flutter_riverpod: ^2.4.9
+
+  # 라우팅
+  go_router: ^13.0.0
+
+  # HTTP 클라이언트
+  dio: ^5.4.0
+
+  # 로컬 저장소
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+
+  # UI 유틸
+  flutter_screenutil: ^5.9.0
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+
+  # 유틸리티
+  intl: ^0.18.1
+
+  # 소셜 로그인
+  kakao_flutter_sdk: ^1.9.5
+  sign_in_with_apple: ^6.1.4
+
+  # WebView
+  webview_flutter: ^4.7.0
+  webview_flutter_android: ^3.16.0
+  url_launcher: ^6.2.4
+
+  # QR 스캔
+  mobile_scanner: ^7.2.0
+
+  # 공유
+  share_plus: ^10.0.0
+
+  # 앱 정보
+  package_info_plus: ^8.0.0
+
+  # 생체 인증
+  local_auth: ^2.3.0
+
+  # 네트워크 연결 상태
+  connectivity_plus: ^6.1.0
+
+  # 차트
+  fl_chart: ^0.69.0
+
+  # 캘린더
+  table_calendar: ^3.0.9
+
+  # 푸시 알림
+  firebase_core: ^2.24.2
+  firebase_messaging: 14.9.4
+  flutter_local_notifications: ^17.0.0
+  flutter_timezone: ^3.0.1
+  timezone: ^0.9.4
+  file_picker: ^8.0.5
+  image_picker: ^1.0.7
+
+  # 위치 기반 서비스
+  geolocator: ^12.0.0
+  flutter_naver_map: ^1.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+
+  # 앱 아이콘 생성
+  flutter_launcher_icons: ^0.13.1
+
+  # 스플래시 화면
+  flutter_native_splash: ^2.3.8
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+# 앱 아이콘 설정
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  adaptive_icon_background: "#D4603C"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+
+# 스플래시 화면 설정
+flutter_native_splash:
+  color: "#D4603C"
+  image: "assets/images/splash_logo.png"
+  android_12:
+    color: "#D4603C"
+    image: "assets/images/splash_logo.png"
