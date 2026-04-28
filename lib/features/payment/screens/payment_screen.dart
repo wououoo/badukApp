@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/error/error_handler.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/payment.dart';
 import '../../../data/models/registration.dart';
@@ -94,7 +95,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.payment, color: AppColors.accent, size: 20),
+                      Icon(Icons.account_balance, color: AppColors.accent, size: 20),
                       SizedBox(width: 8),
                       Text(
                         '결제 안내',
@@ -108,7 +109,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    '토스페이먼츠를 통해 안전하게 결제됩니다.\n카드, 계좌이체 등 다양한 결제 수단을 이용하실 수 있습니다.',
+                    '가상계좌가 발급되며, 24시간 내에 입금하시면 참가신청이 확정됩니다.',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -173,7 +174,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     ),
                   )
                 : Text(
-                    '${_formatNumber(widget.amount)}원 토스로 결제하기',
+                    '${_formatNumber(widget.amount)}원 결제하기',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -189,62 +190,43 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      int registrationId;
+      final paymentNotifier = ref.read(paymentProvider.notifier);
+      Payment? payment;
 
       if (widget.existingRegistrationId != null) {
-        // 기존 미결제 참가신청 → 참가신청 스킵, 바로 결제
-        registrationId = widget.existingRegistrationId!;
+        // 기존 미결제 재시도
+        payment = await paymentNotifier.preparePayment(
+          registrationId: widget.existingRegistrationId!,
+          homepageId: widget.homepageId ?? 0,
+          categoryId: 0,
+          participantName: widget.participantName,
+        );
       } else {
-        // 신규 참가신청
+        // 신규 결제 — Registration 생성 없이 바로 결제 준비
         if (widget.registration == null) {
           _showErrorSnackBar('참가신청 정보가 없습니다');
           return;
         }
 
-        // 1단계: 참가신청 저장 (paymentStatus = UNPAID)
-        final registrationResponse = await _homepageService.submitRegistration(
-          widget.registration!,
-        );
-
-        if (!registrationResponse.success || registrationResponse.registrationId == null) {
-          _showErrorSnackBar(registrationResponse.message ?? '참가신청 저장 실패');
-          return;
-        }
-
-        registrationId = registrationResponse.registrationId!;
-      }
-
-      // 2단계: 결제 준비 (토스)
-      final paymentNotifier = ref.read(paymentProvider.notifier);
-      Payment? payment;
-      try {
         payment = await paymentNotifier.preparePayment(
-          registrationId: registrationId,
+          registrationData: widget.registration!.toJson(),
+          homepageId: widget.registration!.homepageId,
+          categoryId: widget.registration!.categoryId,
+          participantName: widget.participantName,
         );
-      } catch (e) {
-        // 결제 준비 실패 → 신규 신청만 정리 (기존 신청은 유지)
-        if (widget.existingRegistrationId == null) {
-          await _cancelOrphanedRegistration(registrationId);
-        }
-        _showErrorSnackBar('결제 준비 중 오류가 발생했습니다');
-        return;
       }
 
       if (payment == null) {
-        if (widget.existingRegistrationId == null) {
-          await _cancelOrphanedRegistration(registrationId);
-        }
         _showErrorSnackBar('결제 준비 중 오류가 발생했습니다');
         return;
       }
 
-      // 무료인 경우
       if (payment.isFree) {
         _showSuccessDialog(payment);
         return;
       }
 
-      // 3단계: 토스 결제 WebView로 이동
+      // 토스 결제 WebView로 이동 (가상계좌)
       if (!mounted) return;
 
       final result = await context.push<bool>(
@@ -253,16 +235,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           'orderId': payment.orderId!,
           'amount': payment.amount,
           'orderName': payment.orderName ?? '${widget.contestName} - ${widget.categoryName}',
-          'registrationId': registrationId,
         },
       );
 
-      // 결제 결과 처리
+      // 결제 성공 → 결과 화면 (Registration은 백엔드 confirm에서 생성됨)
       if (result == true && mounted) {
-        // 결제 성공 → 알림 스케줄링 + 결과 화면
-        if (widget.contestStartDate != null && registrationId > 0) {
+        if (widget.contestStartDate != null) {
           NotificationService().scheduleContestReminders(
-            registrationId: registrationId,
+            registrationId: 0,
             homepageId: widget.homepageId ?? 0,
             contestName: widget.contestName,
             contestStartDate: widget.contestStartDate!,
@@ -272,27 +252,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         if (currentPayment != null) {
           context.pushReplacement('/payment/success', extra: currentPayment);
         }
-      } else if (mounted) {
-        // 결제 취소/실패 → 신규 신청만 정리 (기존 신청은 유지하여 재시도 가능)
-        if (widget.existingRegistrationId == null) {
-          await _cancelOrphanedRegistration(registrationId);
-        }
       }
+      // 결제 실패/취소 → 아무것도 안 함 (Registration이 생성되지 않았으므로)
     } catch (e) {
-      _showErrorSnackBar(e.toString());
+      _showErrorSnackBar(ErrorHandler.getUserFriendlyMessage(e));
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
-    }
-  }
-
-  /// 결제 준비 실패 시 생성된 참가신청 정리
-  Future<void> _cancelOrphanedRegistration(int registrationId) async {
-    try {
-      await _homepageService.cancelRegistration(registrationId);
-    } catch (_) {
-      // cleanup 실패는 무시 (사용자에게 노출하지 않음)
     }
   }
 

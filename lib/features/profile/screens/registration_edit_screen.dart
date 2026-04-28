@@ -37,10 +37,11 @@ class _RegistrationEditScreenState extends ConsumerState<RegistrationEditScreen>
   /// 결제 완료 여부
   bool get _isPaid => widget.currentData?['paymentStatus'] == 'COMPLETED';
 
-  // 기력 목록
+  // 기력 목록 (신청 폼의 GAME_LEVEL_OPTIONS와 동일하게 30급부터)
   static const List<String> _ranks = [
-    '18급', '17급', '16급', '15급', '14급', '13급', '12급', '11급', '10급',
-    '9급', '8급', '7급', '6급', '5급', '4급', '3급', '2급', '1급',
+    '30급', '29급', '28급', '27급', '26급', '25급', '24급', '23급', '22급', '21급',
+    '20급', '19급', '18급', '17급', '16급', '15급', '14급', '13급', '12급', '11급',
+    '10급', '9급', '8급', '7급', '6급', '5급', '4급', '3급', '2급', '1급',
     '1단', '2단', '3단', '4단', '5단', '6단', '7단', '8단', '9단',
   ];
 
@@ -58,9 +59,11 @@ class _RegistrationEditScreenState extends ConsumerState<RegistrationEditScreen>
     final data = widget.currentData;
     _clubController = TextEditingController(text: data?['club'] ?? '');
     _nameController = TextEditingController(text: data?['participantName'] ?? '');
-    _phoneController = TextEditingController(text: data?['phone'] ?? '');
+    // 백엔드 응답 필드명에 맞춤 (phone → phoneNumber, rank → skillLevel)
+    _phoneController = TextEditingController(
+        text: data?['phoneNumber'] ?? data?['phone'] ?? '');
     _selectedRegion = data?['region'];
-    _selectedRank = data?['rank'];
+    _selectedRank = data?['skillLevel'] ?? data?['rank'];
     _selectedCategoryId = (data?['categoryId'] as num?)?.toInt();
     _loadCategories();
   }

@@ -1,10 +1,10 @@
-/// 결제 정보 모델 (토스 결제 전용)
+/// 결제 정보 모델 (토스 가상계좌 전용)
 class Payment {
   final int? paymentId;
   final int registrationId;
   final String? orderId;
   final String paymentMethod; // TOSS, FREE
-  final String paymentStatus; // PENDING, COMPLETED, FAILED, CANCELLED, REFUNDED
+  final String paymentStatus; // PENDING, WAITING_FOR_DEPOSIT, COMPLETED, FAILED, CANCELLED, REFUNDED, PARTIAL_REFUNDED
   final int amount;
 
   // 토스페이먼츠 정보
@@ -60,6 +60,7 @@ class Payment {
   }
 
   bool get isPending => paymentStatus == 'PENDING';
+  bool get isWaitingForDeposit => paymentStatus == 'WAITING_FOR_DEPOSIT';
   bool get isCompleted => paymentStatus == 'COMPLETED';
   bool get isFailed => paymentStatus == 'FAILED';
   bool get isRefunded => paymentStatus == 'REFUNDED';
@@ -70,6 +71,8 @@ class Payment {
     switch (paymentStatus) {
       case 'PENDING':
         return '결제 대기';
+      case 'WAITING_FOR_DEPOSIT':
+        return '입금 대기';
       case 'COMPLETED':
         return '결제 완료';
       case 'FAILED':

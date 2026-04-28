@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ 데이터 추출 규칙. 백업/이전(폰 교체) 시 앱 데이터를 제외.
+  앱 재설치 시 SecureStorage/SharedPreferences에 stale 토큰이 자동 복원되어
+  스플래시 화면에서 hang 되던 이슈 방지용.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+    </device-transfer>
+</data-extraction-rules>

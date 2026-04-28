@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/error/error_handler.dart';
 import '../models/payment.dart';
 import '../services/payment_service.dart';
 
@@ -37,23 +38,34 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
 
   /// 결제 준비
   Future<Payment?> preparePayment({
-    required int registrationId,
+    int? registrationId,
+    Map<String, dynamic>? registrationData,
+    required int homepageId,
+    required int categoryId,
+    required String participantName,
   }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
       final payment = await _service.preparePayment(
         registrationId: registrationId,
+        registrationData: registrationData,
+        homepageId: homepageId,
+        categoryId: categoryId,
+        participantName: participantName,
       );
       state = state.copyWith(currentPayment: payment, isLoading: false);
       return payment;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorHandler.getUserFriendlyMessage(e),
+      );
       return null;
     }
   }
 
-  /// 결제 확인
+  /// 토스 결제 확인
   Future<Payment?> confirmPayment({
     required String paymentKey,
     required String orderId,
@@ -70,7 +82,19 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
       state = state.copyWith(currentPayment: payment, isLoading: false);
       return payment;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorHandler.getUserFriendlyMessage(e),
+      );
+      return null;
+    }
+  }
+
+  /// 결제 상태 조회 - orderId 기반 (결제 복구용)
+  Future<Payment?> getPaymentByOrderId(String orderId) async {
+    try {
+      return await _service.getPaymentByOrderId(orderId);
+    } catch (_) {
       return null;
     }
   }
@@ -83,7 +107,10 @@ class PaymentNotifier extends StateNotifier<PaymentState> {
       final payment = await _service.getPayment(registrationId);
       state = state.copyWith(currentPayment: payment, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorHandler.getUserFriendlyMessage(e),
+      );
     }
   }
 

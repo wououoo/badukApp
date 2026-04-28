@@ -34,29 +34,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   // 주최자 신청 관련
   bool _wantToBeHost = false;
 
-  // 계좌 정보
-  final _accountNumberController = TextEditingController();
-  final _accountHolderController = TextEditingController();
-  String _selectedBankCode = '004';
-  final List<Map<String, String>> _banks = [
-    {'code': '004', 'name': 'KB국민은행'},
-    {'code': '088', 'name': '신한은행'},
-    {'code': '020', 'name': '우리은행'},
-    {'code': '081', 'name': '하나은행'},
-    {'code': '011', 'name': 'NH농협은행'},
-    {'code': '003', 'name': 'IBK기업은행'},
-    {'code': '023', 'name': 'SC제일은행'},
-    {'code': '027', 'name': '한국씨티은행'},
-    {'code': '039', 'name': '경남은행'},
-    {'code': '034', 'name': '광주은행'},
-    {'code': '031', 'name': '대구은행'},
-    {'code': '032', 'name': '부산은행'},
-    {'code': '037', 'name': '전북은행'},
-    {'code': '035', 'name': '제주은행'},
-    {'code': '090', 'name': '카카오뱅크'},
-    {'code': '092', 'name': '토스뱅크'},
-    {'code': '089', 'name': '케이뱅크'},
-  ];
 
   /// 총 단계 수 (이름 필요 시 4단계, 아니면 3단계)
   int get _totalSteps => _needsName ? 4 : 3;
@@ -67,8 +44,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     _clubController.dispose();
     _organizationController.dispose();
     _hostReasonController.dispose();
-    _accountNumberController.dispose();
-    _accountHolderController.dispose();
     super.dispose();
   }
 
@@ -590,95 +565,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // 계좌 정보 입력
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.account_balance, size: 18, color: Colors.blue[700]),
-                          const SizedBox(width: 8),
-                          Text(
-                            '참가비 수금 계좌 *',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Colors.blue[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // 은행 선택
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedBankCode,
-                            isExpanded: true,
-                            items: _banks.map((bank) {
-                              return DropdownMenuItem(
-                                value: bank['code'],
-                                child: Text(bank['name']!),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() => _selectedBankCode = value!);
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // 계좌번호
-                      TextFormField(
-                        controller: _accountNumberController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          hintText: '계좌번호 (- 없이 입력)',
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // 예금주
-                      TextFormField(
-                        controller: _accountHolderController,
-                        decoration: InputDecoration(
-                          hintText: '예금주명',
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 12),
                 Text(
                   '* 관리자 승인 후 주최자 활동이 가능합니다',
@@ -849,18 +735,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         );
         return;
       }
-      if (_accountNumberController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('참가비 수금 계좌번호를 입력해주세요.')),
-        );
-        return;
-      }
-      if (_accountHolderController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('예금주명을 입력해주세요.')),
-        );
-        return;
-      }
     }
 
     setState(() => _isLoading = true);
@@ -880,19 +754,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       // 2. 주최자 신청 (선택한 경우)
       if (success && _wantToBeHost && mounted) {
         try {
-          // 선택된 은행명 찾기
-          final selectedBank = _banks.firstWhere(
-            (bank) => bank['code'] == _selectedBankCode,
-            orElse: () => {'code': _selectedBankCode, 'name': ''},
-          );
-
           await ref.read(hostApplyProvider.notifier).applyForHost(
             organization: _organizationController.text.trim(),
             reason: _hostReasonController.text.trim(),
-            bankCode: _selectedBankCode,
-            bankName: selectedBank['name'],
-            accountNumber: _accountNumberController.text.trim().replaceAll('-', ''),
-            accountHolder: _accountHolderController.text.trim(),
           );
 
           ScaffoldMessenger.of(context).showSnackBar(

@@ -32,15 +32,10 @@ class HostApplyNotifier extends StateNotifier<HostApplyState> {
 
   final _apiClient = ApiClient.instance;
 
-  /// 주최자 신청 (계좌 정보 포함)
+  /// 주최자 신청
   Future<void> applyForHost({
     required String organization,
     required String reason,
-    // 계좌 정보
-    String? bankCode,
-    String? bankName,
-    String? accountNumber,
-    String? accountHolder,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -50,11 +45,6 @@ class HostApplyNotifier extends StateNotifier<HostApplyState> {
         data: {
           'organization': organization,
           'reason': reason,
-          // 계좌 정보
-          if (bankCode != null) 'bankCode': bankCode,
-          if (bankName != null) 'bankName': bankName,
-          if (accountNumber != null) 'accountNumber': accountNumber,
-          if (accountHolder != null) 'accountHolder': accountHolder,
         },
       );
 

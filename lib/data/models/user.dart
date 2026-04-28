@@ -21,8 +21,6 @@ class User {
   final String? hostStatus; // NONE, PENDING, APPROVED, REJECTED
   final String? organization; // 소속 (협회, 도장 등)
   final String? organizationType; // 협회, 도장, 동호회, 개인
-  final bool? openbankingConnected; // 오픈뱅킹 연동 여부
-
   // 개인정보 동의 관련
   final bool? privacyConsented; // 개인정보 동의 완료 여부
   final String? privacyConsentVersion; // 동의한 약관 버전
@@ -48,7 +46,6 @@ class User {
     this.hostStatus,
     this.organization,
     this.organizationType,
-    this.openbankingConnected,
     this.privacyConsented,
     this.privacyConsentVersion,
   });
@@ -78,7 +75,6 @@ class User {
       hostStatus: json['hostStatus'],
       organization: json['organization'],
       organizationType: json['organizationType'],
-      openbankingConnected: json['openbankingConnected'],
       privacyConsented: json['privacyConsented'],
       privacyConsentVersion: json['privacyConsentVersion'],
     );
@@ -106,7 +102,6 @@ class User {
       'hostStatus': hostStatus,
       'organization': organization,
       'organizationType': organizationType,
-      'openbankingConnected': openbankingConnected,
       'privacyConsented': privacyConsented,
       'privacyConsentVersion': privacyConsentVersion,
     };
@@ -119,8 +114,6 @@ class User {
   bool get isHostPending => hostStatus == 'PENDING';
   bool get isHostApproved => hostStatus == 'APPROVED';
   bool get canCreateContest => isHost || isAdmin;
-  bool get needsOpenBanking => isHost && openbankingConnected != true;
-
   /// 프로필이 완성되었는지 확인
   bool get isProfileComplete =>
       identityVerified == true && profileCompleted == true;
@@ -147,7 +140,6 @@ class User {
     String? hostStatus,
     String? organization,
     String? organizationType,
-    bool? openbankingConnected,
     bool? privacyConsented,
     String? privacyConsentVersion,
   }) {
@@ -172,7 +164,6 @@ class User {
       hostStatus: hostStatus ?? this.hostStatus,
       organization: organization ?? this.organization,
       organizationType: organizationType ?? this.organizationType,
-      openbankingConnected: openbankingConnected ?? this.openbankingConnected,
       privacyConsented: privacyConsented ?? this.privacyConsented,
       privacyConsentVersion: privacyConsentVersion ?? this.privacyConsentVersion,
     );

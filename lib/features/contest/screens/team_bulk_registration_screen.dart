@@ -13,12 +13,14 @@ class TeamBulkRegistrationScreen extends ConsumerStatefulWidget {
   final int homepageId;
   final ContestDetail contest;
   final ContestCategory category;
+  final String registrationType; // 'TEAM' 또는 'PAIR'
 
   const TeamBulkRegistrationScreen({
     super.key,
     required this.homepageId,
     required this.contest,
     required this.category,
+    this.registrationType = 'TEAM',
   });
 
   @override
@@ -107,7 +109,16 @@ class _TeamBulkRegistrationScreenState
       for (int i = 0; i < _memberFields.length; i++) {
         final member = _memberFields[i];
         final name = member.nameController.text.trim();
-        if (name.isEmpty) continue; // 빈 팀원은 건너뜀
+        if (name.isEmpty) {
+          _showError('${i + 2}번 팀원의 이름을 입력해주세요.');
+          setState(() => _isLoading = false);
+          return;
+        }
+        if (member.skillLevel == null || member.skillLevel!.isEmpty) {
+          _showError('${i + 2}번 팀원의 기력을 선택해주세요.');
+          setState(() => _isLoading = false);
+          return;
+        }
         teamMembers.add({
           'name': name,
           'skillLevel': member.skillLevel ?? '',
@@ -122,7 +133,7 @@ class _TeamBulkRegistrationScreenState
         skillLevel: _leaderSkillLevel ?? '',
         phone: _leaderPhoneController.text.trim(),
         password: _leaderPasswordController.text,
-        type: 'TEAM',
+        type: widget.registrationType,
         teamName: _teamNameController.text.trim(),
         teamMembers: teamMembers,
         teamMemberOrder: 1, // 팀 대표 = 1번
@@ -283,6 +294,33 @@ class _TeamBulkRegistrationScreenState
               _buildContestInfo(),
               const SizedBox(height: 24),
 
+              // 전원 입력 안내 배너
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '팀원 $_teamSize명 전원의 정보를 입력해주세요.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // 팀명 입력
               _buildSection(
                 title: '팀명',
@@ -298,9 +336,13 @@ class _TeamBulkRegistrationScreenState
               ),
               const SizedBox(height: 24),
 
-              // 팀 대표 정보
+              // 클럽에서 팀원 선택 버튼
+              _buildClubPickerButton(),
+              const SizedBox(height: 24),
+
+              // 1번 팀원 (본인)
               _buildSection(
-                title: '팀 대표 정보 (1번)',
+                title: '1번 팀원',
                 required: true,
                 child: Column(
                   children: [
@@ -313,6 +355,15 @@ class _TeamBulkRegistrationScreenState
                           v?.isEmpty ?? true ? '이름을 입력하세요' : null,
                     ),
                     const SizedBox(height: 14),
+                    _buildDropdownField(
+                      label: '기력',
+                      required: true,
+                      value: _leaderSkillLevel,
+                      items: _skillLevels,
+                      onChanged: (v) =>
+                          setState(() => _leaderSkillLevel = v),
+                    ),
+                    const SizedBox(height: 14),
                     _buildTextField(
                       controller: _leaderPhoneController,
                       label: '연락처',
@@ -322,40 +373,32 @@ class _TeamBulkRegistrationScreenState
                       validator: (v) =>
                           v?.isEmpty ?? true ? '연락처를 입력하세요' : null,
                     ),
-                    const SizedBox(height: 14),
-                    _buildDropdownField(
-                      label: '기력',
-                      required: true,
-                      value: _leaderSkillLevel,
-                      items: _skillLevels,
-                      onChanged: (v) =>
-                          setState(() => _leaderSkillLevel = v),
-                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // 클럽에서 팀원 선택 버튼
-              _buildClubPickerButton(),
-              const SizedBox(height: 24),
-
-              // 팀원 정보 (동적)
+              // 2번~ 팀원
               ...List.generate(_memberFields.length, (index) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 24),
                   child: _buildSection(
-                    title: '팀원 ${index + 2}번',
+                    title: '${index + 2}번 팀원',
+                    required: true,
                     child: Column(
                       children: [
                         _buildTextField(
                           controller: _memberFields[index].nameController,
                           label: '이름',
                           hint: '실명을 입력하세요',
+                          required: true,
+                          validator: (v) =>
+                              v?.isEmpty ?? true ? '이름을 입력하세요' : null,
                         ),
                         const SizedBox(height: 14),
                         _buildDropdownField(
                           label: '기력',
+                          required: true,
                           value: _memberFields[index].skillLevel,
                           items: _skillLevels,
                           onChanged: (v) => setState(

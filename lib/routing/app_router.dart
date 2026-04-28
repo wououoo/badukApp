@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/chat/screens/chat_list_screen.dart';
+import '../features/chat/screens/chat_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/contest/screens/contest_list_screen.dart';
 import '../features/contest/screens/contest_detail_screen.dart';
@@ -43,6 +45,7 @@ import '../features/qr/screens/qr_scanner_screen.dart';
 import '../features/live/screens/live_contest_screen.dart';
 import '../features/payment/screens/payment_screen.dart';
 import '../features/payment/screens/payment_success_screen.dart';
+import '../features/payment/screens/payment_result_screen.dart';
 import '../features/payment/screens/toss_checkout_screen.dart';
 import '../features/payment/screens/refund_request_screen.dart';
 import '../features/contest/screens/refund_policy_page.dart';
@@ -256,6 +259,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
+          // 문의(채팅) 탭 - 일단 비활성
+          // GoRoute(
+          //   path: '/chat',
+          //   pageBuilder: (context, state) => const NoTransitionPage(
+          //     child: ChatListScreen(),
+          //   ),
+          // ),
+
           // 클럽 탭
           GoRoute(
             path: '/clubs-tab',
@@ -272,6 +283,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+
+      // 채팅 대화 화면 (전체 화면)
+      GoRoute(
+        path: '/chat/:roomId',
+        builder: (context, state) {
+          final roomId = int.parse(state.pathParameters['roomId']!);
+          final extra = state.extra as Map<String, dynamic>?;
+          return ChatScreen(
+            roomId: roomId,
+            contestTitle: extra?['contestTitle'],
+            myRole: extra?['myRole'],
+          );
+        },
       ),
 
       // 내 참가신청 내역 (전체 화면)
@@ -368,6 +393,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             homepageId: id,
             contest: extra['contest'] as ContestDetail,
             category: extra['category'] as ContestCategory,
+            registrationType: (extra['registrationType'] as String?) ?? 'TEAM',
           );
         },
       ),
@@ -596,7 +622,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             orderId: extra['orderId'] as String,
             amount: extra['amount'] as int,
             orderName: extra['orderName'] as String,
-            registrationId: extra['registrationId'] as int,
+            registrationId: extra['registrationId'] as int?,
           );
         },
       ),
@@ -615,6 +641,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
+      // 웹 결제 결과 화면 (백엔드 리다이렉트 진입)
+      // /payment/result?status=success&orderId=...
+      // /payment/result?status=fail&code=...&message=...
+      // Web hash routing 대응(query가 # 앞에 붙는 케이스)은 PaymentResultScreen.initState에서 처리.
+      GoRoute(
+        path: '/payment/result',
+        builder: (context, state) => PaymentResultScreen(
+          status: state.uri.queryParameters['status'],
+          orderId: state.uri.queryParameters['orderId'],
+          code: state.uri.queryParameters['code'],
+          message: state.uri.queryParameters['message'],
+        ),
+      ),
+
       // 참가신청 수정 화면 (전체 화면)
       GoRoute(
         path: '/registration/edit/:registrationId',
@@ -624,6 +664,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           return RegistrationEditScreen(registrationId: registrationId, currentData: extra);
         },
       ),
+
+      // 부문 변경 흐름 제거됨: 취소 후 재신청으로 통일 (정원 race 및 환불 정책 충돌 방지)
+      // 기존 /category-change/:registrationId 라우트는 my_registrations에서 더 이상 호출되지 않음
 
       // 환불 규정 페이지
       GoRoute(

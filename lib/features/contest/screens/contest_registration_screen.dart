@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/registration.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../../data/services/chat_service.dart';
 import '../../../data/services/contest_service.dart';
 import '../../../data/services/homepage_service.dart';
 import '../../../data/services/notification_service_stub.dart'
@@ -127,7 +128,21 @@ class _ContestRegistrationScreenState
 
       final RegistrationData registration;
 
-      if (_isForChild) {
+      if (_isPairOrganizerCategory) {
+        // 페어 랜덤조편성 - 개인 신청
+        registration = RegistrationData(
+          homepageId: widget.homepageId,
+          categoryId: _selectedCategory!.id,
+          name: _nameController.text.trim(),
+          skillLevel: _selectedSkillLevel ?? '',
+          phone: _phoneController.text.trim(),
+          password: _passwordController.text,
+          type: 'PAIR',
+          region: _selectedRegion,
+          club: _clubController.text.trim(),
+          mobileUserId: mobileUserId,
+        );
+      } else if (_isForChild) {
         // 자녀 대리 신청
         registration = RegistrationData(
           homepageId: widget.homepageId,
@@ -380,10 +395,17 @@ class _ContestRegistrationScreenState
               // 단체전 부문 선택 시: 모드 선택 카드 표시
               if (_isTeamCategory) ...[
                 _buildTeamModeSelection(),
+              ] else if (_isPairSelfCategory) ...[
+                // 페어 자유조편성: 팀 신청 모드
+                _buildPairSelfModeSelection(),
               ] else ...[
-                // 기존 개인전 로직
-                // 신청 유형 선택 (본인/자녀)
-                _buildTypeSelection(),
+                // 개인전 / 페어 랜덤조편성
+                if (_isPairOrganizerCategory) ...[
+                  _buildPairOrganizerInfo(),
+                  const SizedBox(height: 16),
+                ],
+                // 페어 랜덤조편성은 본인 신청만 (자녀 선택 없음)
+                if (!_isPairCategory) _buildTypeSelection(),
                 const SizedBox(height: 24),
 
                 // 본인 신청: 본인 정보
@@ -410,6 +432,10 @@ class _ContestRegistrationScreenState
                 // 동의 체크박스
                 _buildAgreementSection(),
                 const SizedBox(height: 32),
+
+                // 주최자에게 문의(채팅) - 일단 비활성
+                // if (widget.contest.hasChatManager)
+                //   _buildInquiryButton(),
 
                 // 제출 버튼
                 _buildSubmitButton(),
@@ -647,6 +673,29 @@ class _ContestRegistrationScreenState
   bool get _isTeamCategory =>
       _selectedCategory?.contestType?.toUpperCase() == 'TEAM';
 
+  /// 선택된 부문이 페어 자유조편성인지 (팀 일괄 신청)
+  /// teamFormationType이 null이어도 teamSize가 있으면 자유조편성으로 판단
+  bool get _isPairSelfCategory {
+    final cat = _selectedCategory;
+    if (cat == null || cat.contestType?.toUpperCase() != 'PAIR') return false;
+    if (cat.teamFormationType == 'SELF') return true;
+    if (cat.teamFormationType == null && cat.teamSize != null && cat.teamSize! > 0) return true;
+    return false;
+  }
+
+  /// 선택된 부문이 페어 랜덤조편성인지 (개인 신청)
+  bool get _isPairOrganizerCategory {
+    final cat = _selectedCategory;
+    if (cat == null || cat.contestType?.toUpperCase() != 'PAIR') return false;
+    if (cat.teamFormationType == 'ORGANIZER') return true;
+    if (cat.teamFormationType == null && (cat.teamSize == null || cat.teamSize == 0)) return true;
+    return false;
+  }
+
+  /// 선택된 부문이 페어인지
+  bool get _isPairCategory =>
+      _selectedCategory?.contestType?.toUpperCase() == 'PAIR';
+
   String _getContestTypeLabel(String type) {
     switch (type.toUpperCase()) {
       case 'MCMAHON':
@@ -659,6 +708,8 @@ class _ContestRegistrationScreenState
         return '스위스리그';
       case 'TEAM':
         return '단체전';
+      case 'PAIR':
+        return '페어';
       default:
         return type;
     }
@@ -849,6 +900,103 @@ class _ContestRegistrationScreenState
             controller: _childAcademyController,
             label: '바둑학원',
             hint: '예: OO바둑교실',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 페어 자유조편성 모드 선택 (팀 신청으로 이동)
+  Widget _buildPairSelfModeSelection() {
+    return _buildSection(
+      title: '페어 신청 (자유조편성)',
+      subtitle: '팀원 ${_selectedCategory?.teamSize ?? 2}명의 정보를 한번에 등록합니다',
+      child: GestureDetector(
+        onTap: () {
+          context.push(
+            '/contest/${widget.homepageId}/team-register',
+            extra: {
+              'contest': widget.contest,
+              'category': _selectedCategory!,
+              'registrationType': 'PAIR', // PAIR 타입으로 전달
+            },
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.people,
+                  color: Colors.orange.shade700,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '팀 신청하기',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '팀명과 팀원 ${_selectedCategory?.teamSize ?? 2}명의 정보를 입력합니다',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 페어 랜덤조편성 안내
+  Widget _buildPairOrganizerInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '본인 정보만 입력하시면 주최측이 팀을 배정합니다.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
@@ -1126,6 +1274,40 @@ class _ContestRegistrationScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInquiryButton() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: OutlinedButton.icon(
+        onPressed: () async {
+          try {
+            final chatService = ChatService();
+            final room = await chatService.getOrCreateRoom(homepageId: widget.homepageId);
+            if (mounted) {
+              context.push('/chat/${room['roomId']}', extra: {
+                'contestTitle': room['contestTitle'] ?? widget.contest.name,
+              });
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('채팅방 생성에 실패했습니다.')),
+              );
+            }
+          }
+        },
+        icon: const Icon(Icons.chat_bubble_outline, size: 18),
+        label: const Text('주최자에게 문의하기'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          minimumSize: const Size(double.infinity, 48),
+        ),
       ),
     );
   }

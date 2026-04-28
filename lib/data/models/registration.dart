@@ -6,7 +6,7 @@ class RegistrationData {
   final String skillLevel;
   final String? phone;
   final String password; // 4자리 숫자
-  final String type; // CHILD, ADULT, TEAM
+  final String type; // CHILD, ADULT, TEAM, PAIR
 
   // 유소년부 전용
   final String? school;
@@ -74,10 +74,11 @@ class RegistrationData {
       data['region'] = region ?? '';
       data['club'] = club ?? '';
       data['emergencyContact'] = _formatPhone(phone) ?? '';
-    } else if (type == 'TEAM') {
-      data['teamName'] = teamName ?? '';
+    } else if (type == 'TEAM' || type == 'PAIR') {
+      if (teamName != null) data['teamName'] = teamName;
       data['region'] = region ?? '';
       data['club'] = club ?? '';
+      data['emergencyContact'] = _formatPhone(phone) ?? '';
       if (teamMembers != null) {
         data['teamMembers'] = teamMembers;
       }

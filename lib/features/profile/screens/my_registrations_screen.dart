@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/api_constants.dart';
@@ -6,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/api/api_client.dart';
 import '../../../data/providers/payment_provider.dart';
 import '../../../data/services/user_service.dart';
+import '../../../data/services/chat_service.dart';
 import '../../../data/services/notification_service_stub.dart'
     if (dart.library.io) '../../../data/services/notification_service.dart';
 
@@ -143,6 +145,20 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                   ),
                   const SizedBox(width: 8),
                   _buildStatusBadge(status),
+                  // 주최자 문의(채팅) 버튼 - 일단 비활성
+                  // if (reg['homepageId'] != null) ...[
+                  //   const SizedBox(width: 6),
+                  //   SizedBox(
+                  //     width: 32,
+                  //     height: 32,
+                  //     child: IconButton(
+                  //       padding: EdgeInsets.zero,
+                  //       icon: Icon(Icons.chat_bubble_outline, size: 18, color: AppColors.primary),
+                  //       tooltip: '주최자에게 문의',
+                  //       onPressed: () => _openChat(context, reg),
+                  //     ),
+                  //   ),
+                  // ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -179,11 +195,137 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                     ],
                   ],
                 ),
+              // 입금 대기 중이면 가상계좌 정보 박스
+              if (paymentStatus == 'WAITING_FOR_DEPOSIT' && reg['virtualAccount'] != null) ...[
+                const SizedBox(height: 10),
+                _buildVirtualAccountBox(reg['virtualAccount'] as Map<String, dynamic>),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildVirtualAccountBox(Map<String, dynamic> va) {
+    final bankName = (va['vaBankName'] as String?) ?? '-';
+    final accountNumber = (va['vaAccountNumber'] as String?) ?? '-';
+    final customerName = (va['vaCustomerName'] as String?) ?? '';
+    final dueDateStr = va['vaDueDate'] as String?;
+    final dueDate = _formatDueDate(dueDateStr);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.account_balance, size: 16, color: const Color(0xFFB26A00)),
+              const SizedBox(width: 6),
+              Text(
+                '입금 안내',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFFB26A00)),
+              ),
+              const Spacer(),
+              if (dueDate.isNotEmpty)
+                Text(
+                  '$dueDate까지',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFB26A00)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text('$bankName  ', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Expanded(
+                child: SelectableText(
+                  accountNumber,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: accountNumber));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('계좌번호가 복사되었습니다'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFFFE082)),
+                  ),
+                  child: Text(
+                    '복사',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFB26A00)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (customerName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              '입금자명: $customerName',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatDueDate(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw);
+      final m = dt.month.toString().padLeft(2, '0');
+      final d = dt.day.toString().padLeft(2, '0');
+      final h = dt.hour.toString().padLeft(2, '0');
+      final mi = dt.minute.toString().padLeft(2, '0');
+      return '$m/$d $h:$mi';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> _openChat(BuildContext context, Map<String, dynamic> reg) async {
+    try {
+      final chatService = ChatService();
+      final homepageId = (reg['homepageId'] as num?)?.toInt();
+      if (homepageId == null) return;
+      final room = await chatService.getOrCreateRoom(homepageId: homepageId);
+      if (context.mounted) {
+        context.push('/chat/${room['roomId']}', extra: {
+          'contestTitle': room['contestTitle'] ?? reg['contestName'],
+        });
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('채팅방 생성에 실패했습니다.')),
+        );
+      }
+    }
   }
 
   Widget _buildStatusBadge(String status) {
@@ -237,6 +379,11 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
         text = AppColors.statusOpenText;
         label = '결제완료';
         break;
+      case 'WAITING_FOR_DEPOSIT':
+        bg = const Color(0xFFFFF3CD);
+        text = const Color(0xFFB26A00);
+        label = '입금대기';
+        break;
       case 'PENDING':
         bg = AppColors.statusSoonBg;
         text = AppColors.statusSoonText;
@@ -287,6 +434,8 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
     final canPay = fee > 0 && unpaid > 0 && (paymentStatus == 'UNPAID' || paymentStatus == 'PENDING')
         && (status == 'PENDING' || status == 'APPROVED');
     final hasRefund = paymentStatus == 'REFUNDED' || paymentStatus == 'PARTIAL_REFUNDED';
+    // 부문 변경은 별도 흐름 없이 "취소 후 재신청"으로 처리 (정원 race / 환불 정책 충돌 방지)
+    // 안내 문구는 canRefund(결제완료 + 승인)인 케이스에 표시
 
     showModalBottomSheet(
       context: context,
@@ -335,11 +484,38 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
               _buildRefundHistorySection(registrationId),
             ],
 
+            // 부문 변경 안내 (결제 완료된 신청에만 표시)
+            if (canRefund) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF7DD3FC)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, size: 18, color: const Color(0xFF0369A1)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '부문을 바꾸시려면 [취소 신청]으로 환불받으신 후, 원하시는 부문으로 새로 신청해주세요.\n환불 정책에 따라 일부 차감될 수 있습니다.',
+                        style: TextStyle(fontSize: 12, color: const Color(0xFF0369A1), height: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // 액션 버튼 영역
             if (canEdit || canCancel || canRefund || canPay) ...[
               const SizedBox(height: 20),
               const Divider(),
               const SizedBox(height: 16),
+              // 1행: 결제/수정
               Row(
                 children: [
                   if (canPay)
@@ -363,7 +539,7 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                         },
                       ),
                     ),
-                  if (canPay && (canEdit || canCancel || canRefund))
+                  if (canPay && canEdit)
                     const SizedBox(width: 10),
                   if (canEdit)
                     Expanded(
@@ -380,34 +556,40 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                         },
                       ),
                     ),
-                  if (canEdit && (canCancel || canRefund))
-                    const SizedBox(width: 10),
-                  if (canCancel)
-                    Expanded(
-                      child: _actionButton(
-                        icon: Icons.cancel_outlined,
-                        label: '신청 취소',
-                        color: AppColors.error,
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          _confirmCancel(registrationId);
-                        },
-                      ),
-                    ),
-                  if (canRefund)
-                    Expanded(
-                      child: _actionButton(
-                        icon: Icons.cancel_outlined,
-                        label: '취소 신청',
-                        color: const Color(0xFFD97706),
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-                          context.push('/refund/$registrationId');
-                        },
-                      ),
-                    ),
                 ],
               ),
+              // 2행: 취소/환불
+              if (canCancel || canRefund) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (canCancel)
+                      Expanded(
+                        child: _actionButton(
+                          icon: Icons.cancel_outlined,
+                          label: '신청 취소',
+                          color: AppColors.error,
+                          onTap: () {
+                            Navigator.pop(bottomSheetContext);
+                            _confirmCancel(registrationId);
+                          },
+                        ),
+                      ),
+                    if (canRefund)
+                      Expanded(
+                        child: _actionButton(
+                          icon: Icons.cancel_outlined,
+                          label: '취소 신청',
+                          color: const Color(0xFFD97706),
+                          onTap: () {
+                            Navigator.pop(bottomSheetContext);
+                            context.push('/refund/$registrationId');
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
             const SizedBox(height: 8),
           ],

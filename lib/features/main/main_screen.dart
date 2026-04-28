@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/offline_banner.dart';
 import '../../data/api/api_client.dart';
 import '../../data/providers/auth_provider.dart';
+import '../../data/providers/chat_provider.dart';
 import '../../data/providers/contest_provider.dart';
 import '../../data/providers/mobile_qr_provider.dart';
 import '../../data/providers/notification_provider.dart';
@@ -46,11 +47,17 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
         _showForceUpdateDialogSimple();
       }
     };
+
+    // 채팅 안읽은 수 폴링 시작
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(chatUnreadCountProvider.notifier).startPolling();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ref.read(chatUnreadCountProvider.notifier).stopPolling();
     super.dispose();
   }
 
@@ -230,11 +237,11 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
                     label: '대회',
                     path: '/contests',
                   ),
-                  // QR 스캔 버튼 (가운데)
-                  _buildQRButton(context),
+                  // 문의 탭 - 일단 비활성
+                  // _buildChatNavItem(context),
                   _buildNavItem(
                     context,
-                    index: 2,
+                    index: 3,
                     icon: Icons.groups_outlined,
                     activeIcon: Icons.groups,
                     label: '클럽',
@@ -242,7 +249,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
                   ),
                   _buildNavItem(
                     context,
-                    index: 3,
+                    index: 4,
                     icon: Icons.person_outline,
                     activeIcon: Icons.person,
                     label: '내정보',
@@ -312,31 +319,70 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     );
   }
 
-  Widget _buildQRButton(BuildContext context) {
+  Widget _buildChatNavItem(BuildContext context) {
+    final currentIndex = _calculateSelectedIndex(context);
+    final isSelected = currentIndex == 2;
+    final unreadCount = ref.watch(chatUnreadCountProvider);
+
     return GestureDetector(
-      onTap: () => context.push('/qr/scan'),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2D2D2D), Color(0xFF404040)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2D2D2D).withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      onTap: () {
+        ref.read(chatRoomListProvider.notifier).refresh();
+        context.go('/chat');
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 12 : 8,
+          vertical: 8,
         ),
-        child: const Icon(
-          Icons.qr_code_scanner,
-          color: Colors.white,
-          size: 28,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1C1C1E).withOpacity(0.08) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isSelected ? Icons.chat_bubble : Icons.chat_bubble_outline,
+                  color: isSelected ? const Color(0xFF1C1C1E) : AppColors.textTertiary,
+                  size: 24,
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 14),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              const Text(
+                '문의',
+                style: TextStyle(
+                  color: Color(0xFF1C1C1E),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -362,8 +408,9 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
     final String location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/contests')) return 1;
-    if (location.startsWith('/clubs-tab')) return 2;
-    if (location.startsWith('/profile')) return 3;
+    if (location.startsWith('/chat')) return 2;
+    if (location.startsWith('/clubs-tab')) return 3;
+    if (location.startsWith('/profile')) return 4;
     return 0;
   }
 }

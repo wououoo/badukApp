@@ -112,10 +112,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
-      final isLoggedIn = await _authService.isLoggedIn();
+      // 토큰 조회에 5초 timeout (스토리지 자체 hang 방지)
+      final isLoggedIn = await _authService.isLoggedIn().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('[Auth] isLoggedIn timeout → unauth로 진행');
+          return false;
+        },
+      );
       if (!isLoggedIn) {
         // 토큰이 없어도 저장된 유저 정보가 있으면 인증 유지 시도
-        final savedUser = await _authService.getSavedUser();
+        final savedUser = await _authService.getSavedUser().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => null,
+        );
         if (savedUser != null) {
           debugPrint('[Auth] 토큰 없지만 저장된 사용자 정보로 인증 유지: ${savedUser.name}');
           state = AuthState(
@@ -130,10 +140,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return;
       }
 
-      // 서버에서 최신 프로필 정보 가져오기
+      // 서버에서 최신 프로필 정보 가져오기 (8초 timeout - 네트워크 지연 대응)
       User? user;
       try {
-        user = await _authService.getCurrentProfile();
+        user = await _authService.getCurrentProfile().timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            debugPrint('[Auth] getCurrentProfile timeout');
+            return null;
+          },
+        );
       } catch (e) {
         debugPrint('[Auth] 프로필 조회 실패, 저장된 정보로 시도: $e');
       }

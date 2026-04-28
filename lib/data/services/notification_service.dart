@@ -136,6 +136,9 @@ class NotificationService {
         } else if (type == 'club_contest') {
           final clubId = data['clubId'];
           if (clubId != null) GoRouter.of(context).push('/clubs/$clubId');
+        } else if (type == 'CHAT_MESSAGE') {
+          final roomId = data['roomId'];
+          if (roomId != null) GoRouter.of(context).push('/chat/$roomId');
         } else {
           // 기본: 홈으로 이동
           GoRouter.of(context).go('/home');

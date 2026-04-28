@@ -411,6 +411,9 @@ class ContestDetail {
   final bool registrationAvailable;
   final String? registrationStatus; // OPEN, CLOSED, UPCOMING, ENDED
 
+  // 문의 담당자 MobileUser ID 목록 (콤마 구분 문자열을 파싱)
+  final List<int> hostMobileUserIds;
+
   // 위치 좌표
   final String? address;
   final double? latitude;
@@ -440,10 +443,17 @@ class ContestDetail {
     this.registrationOpen,
     this.registrationAvailable = true,
     this.registrationStatus,
+    this.hostMobileUserIds = const [],
     this.address,
     this.latitude,
     this.longitude,
   });
+
+  /// 첫 번째 문의 담당자 ID
+  int? get primaryChatManagerId =>
+      hostMobileUserIds.isNotEmpty ? hostMobileUserIds.first : null;
+
+  bool get hasChatManager => hostMobileUserIds.isNotEmpty;
 
   // UI 호환용 getter
   String? get status => null;
@@ -489,10 +499,22 @@ class ContestDetail {
       registrationOpen: json['registrationOpen'],
       registrationAvailable: json['registrationAvailable'] ?? true,
       registrationStatus: json['registrationStatus'],
+      hostMobileUserIds: _parseIdList(json['hostMobileUserId']),
       address: json['address'],
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
     );
+  }
+
+  static List<int> _parseIdList(dynamic value) {
+    if (value == null) return [];
+    if (value is String && value.isNotEmpty) {
+      return value.split(',').map((s) => int.tryParse(s.trim()) ?? 0).where((id) => id > 0).toList();
+    }
+    if (value is List) {
+      return value.map((e) => (e as num).toInt()).toList();
+    }
+    return [];
   }
 
   static DateTime? _parseDateTime(dynamic value) {
@@ -524,6 +546,7 @@ class ContestCategory {
   final String? note;
   final String? contestType;
   final int? teamSize;
+  final String? teamFormationType; // SELF(자유조편성), ORGANIZER(랜덤조편성) - PAIR에서 사용
   final int? displayOrder;
   final int? fee;              // 참가비
   final String? feeDescription; // 참가비 설명
@@ -539,6 +562,7 @@ class ContestCategory {
     this.note,
     this.contestType,
     this.teamSize,
+    this.teamFormationType,
     this.displayOrder,
     this.fee,
     this.feeDescription,
@@ -556,11 +580,29 @@ class ContestCategory {
       note: json['note'],
       contestType: json['contestType'],
       teamSize: json['teamSize'],
+      teamFormationType: json['teamFormationType'],
       displayOrder: json['displayOrder'],
       fee: json['fee'],
       feeDescription: json['feeDescription'],
       currentParticipants: json['currentParticipants'],
     );
+  }
+
+  /// 페어 자유조편성인지 (팀 일괄 신청)
+  /// teamFormationType이 null이어도 teamSize가 있으면 자유조편성으로 판단
+  bool get isPairSelf {
+    if (contestType?.toUpperCase() != 'PAIR') return false;
+    if (teamFormationType == 'SELF') return true;
+    if (teamFormationType == null && teamSize != null && teamSize! > 0) return true;
+    return false;
+  }
+
+  /// 페어 랜덤조편성인지 (개인 신청)
+  bool get isPairOrganizer {
+    if (contestType?.toUpperCase() != 'PAIR') return false;
+    if (teamFormationType == 'ORGANIZER') return true;
+    if (teamFormationType == null && (teamSize == null || teamSize == 0)) return true;
+    return false;
   }
 
   /// 참가비가 있는지 확인

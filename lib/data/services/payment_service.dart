@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../api/api_client.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/error/app_exception.dart';
@@ -12,16 +13,28 @@ class PaymentService {
 
   // ========== 결제 관련 ==========
 
-  /// 토스 결제 준비 (주문번호 생성)
+  /// 결제 준비 (주문번호 생성)
   /// POST /api/payment/prepare
+  /// - registrationId: 기존 미결제 재시도용
+  /// - registrationData: 신규 결제용 (Registration 미생성, confirm 시 생성)
   Future<Payment> preparePayment({
-    required int registrationId,
+    int? registrationId,
+    Map<String, dynamic>? registrationData,
+    required int homepageId,
+    required int categoryId,
+    required String participantName,
   }) async {
     final response = await _apiClient.post(
       '${ApiConstants.payment}/prepare',
       data: {
-        'registrationId': registrationId,
+        if (registrationId != null) 'registrationId': registrationId,
+        'homepageId': homepageId,
+        'categoryId': categoryId,
+        'participantName': participantName,
         'paymentMethod': 'TOSS',
+        if (registrationData != null) 'registrationJson': registrationData is String
+            ? registrationData
+            : _jsonEncode(registrationData),
       },
     );
 
@@ -32,7 +45,7 @@ class PaymentService {
     throw AppException.server(message: data['message'] ?? '결제 준비에 실패했습니다');
   }
 
-  /// 결제 확인 (토스페이먼츠 결제 완료 후)
+  /// 토스 결제 확인
   /// POST /api/payment/confirm
   Future<Payment> confirmPayment({
     required String paymentKey,
@@ -53,6 +66,23 @@ class PaymentService {
       return Payment.fromJson(data['data']);
     }
     throw AppException.server(message: data['message'] ?? '결제 확인에 실패했습니다');
+  }
+
+  /// 결제 상태 조회 - orderId 기반 (결제 복구용)
+  /// GET /api/payment/order/{orderId}
+  Future<Payment?> getPaymentByOrderId(String orderId) async {
+    try {
+      final response = await _apiClient.get(
+        '${ApiConstants.payment}/order/$orderId',
+      );
+      final data = response.data;
+      if (data['success'] == true && data['data'] != null) {
+        return Payment.fromJson(data['data']);
+      }
+    } catch (_) {
+      // 조회 실패는 null 반환 (복구 시도라 throw 안 함)
+    }
+    return null;
   }
 
   /// 결제 상태 조회
@@ -86,17 +116,25 @@ class PaymentService {
     throw AppException.server(message: data['message'] ?? '환불 금액 계산에 실패했습니다');
   }
 
-  /// 환불 신청 (토스 카드결제 즉시 환불)
+  /// 환불 신청 (토스 가상계좌 환불 - 환불계좌 정보 필수)
   /// POST /api/refund/request
   Future<Refund> requestRefund({
     required int registrationId,
     String? refundReason,
+    String? refundBankCode,
+    String? refundBankName,
+    String? refundAccountNumber,
+    String? refundAccountHolder,
   }) async {
     final response = await _apiClient.post(
       '${ApiConstants.refund}/request',
       data: {
         'registrationId': registrationId,
         if (refundReason != null) 'refundReason': refundReason,
+        if (refundBankCode != null) 'refundBankCode': refundBankCode,
+        if (refundBankName != null) 'refundBankName': refundBankName,
+        if (refundAccountNumber != null) 'refundAccountNumber': refundAccountNumber,
+        if (refundAccountHolder != null) 'refundAccountHolder': refundAccountHolder,
       },
     );
 
@@ -138,5 +176,9 @@ class PaymentService {
           .toList();
     }
     return [];
+  }
+
+  String _jsonEncode(Map<String, dynamic> data) {
+    return jsonEncode(data);
   }
 }

@@ -10,12 +10,13 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/services/contest_service.dart';
+import '../../../data/services/chat_service.dart';
+import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/contest_provider.dart';
 import '../../../data/providers/user_provider.dart';
 import '../widgets/contest_status_badge.dart';
 import '../widgets/contest_photos_tab.dart';
 import '../widgets/refund_policy_section.dart';
-import 'refund_policy_page.dart';
 
 // Re-export for RankingEntry type
 export '../../../data/services/contest_service.dart' show SortRankings, RankingEntry;
@@ -515,13 +516,9 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
             homepageId: widget.contestId,
             compact: true,
             onTapDetail: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => RefundPolicyPage(
-                    homepageId: widget.contestId,
-                    contestName: contest.name,
-                  ),
-                ),
+              context.push(
+                '/refund-policy/${widget.contestId}'
+                '?name=${Uri.encodeComponent(contest.name)}',
               );
             },
           ),
@@ -630,11 +627,57 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               icon: Icons.phone_outlined,
               label: '문의처',
               value: contest.contactInfo!,
-              isLast: true,
+              isLast: !contest.hasChatManager,
             ),
+          // 채팅으로 문의 버튼 - 일단 비활성
+          // if (contest.hasChatManager)
+          //   Padding(
+          //     padding: const EdgeInsets.only(top: 12),
+          //     child: SizedBox(
+          //       width: double.infinity,
+          //       child: OutlinedButton.icon(
+          //         onPressed: () => _openChatWithHost(contest),
+          //         icon: const Icon(Icons.chat_bubble_outline, size: 18),
+          //         label: const Text('채팅으로 문의'),
+          //         style: OutlinedButton.styleFrom(
+          //           foregroundColor: AppColors.primary,
+          //           side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+          //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          //           padding: const EdgeInsets.symmetric(vertical: 12),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
         ],
       ),
     );
+  }
+
+  Future<void> _openChatWithHost(ContestDetail contest) async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      context.push('/login');
+      return;
+    }
+
+    try {
+      final chatService = ChatService();
+      final room = await chatService.getOrCreateRoom(homepageId: contest.id);
+      if (mounted) {
+        context.push('/chat/${room['roomId']}', extra: {
+          'contestTitle': room['contestTitle'] ?? contest.name,
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('채팅방 생성에 실패했습니다.')),
+        );
+      }
+    }
   }
 
   Widget _buildMapTab(ContestDetail contest) {
@@ -1137,10 +1180,32 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
       },
           ),
         ),
-        // 참가신청 버튼
+        // 참가신청 버튼 + 문의 버튼
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: _buildApplyButton(contest),
+          child: Row(
+            children: [
+              // 주최자 채팅 - 일단 비활성
+              // if (contest.hasChatManager)
+              //   Padding(
+              //     padding: const EdgeInsets.only(right: 10),
+              //     child: SizedBox(
+              //       width: 56,
+              //       height: 56,
+              //       child: OutlinedButton(
+              //         onPressed: () => _openChatWithHost(contest),
+              //         style: OutlinedButton.styleFrom(
+              //           padding: EdgeInsets.zero,
+              //           side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+              //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              //         ),
+              //         child: Icon(Icons.chat_bubble_outline, color: AppColors.primary, size: 22),
+              //       ),
+              //     ),
+              //   ),
+              Expanded(child: _buildApplyButton(contest)),
+            ],
+          ),
         ),
       ],
     );

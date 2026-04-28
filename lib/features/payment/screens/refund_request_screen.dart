@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/bank_codes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/payment.dart';
 import '../../../data/providers/payment_provider.dart';
@@ -21,12 +22,17 @@ class RefundRequestScreen extends ConsumerStatefulWidget {
 
 class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
   final _reasonController = TextEditingController();
+  final _accountNumberController = TextEditingController();
+  final _accountHolderController = TextEditingController();
+  String? _selectedBankCode;
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void dispose() {
     _reasonController.dispose();
+    _accountNumberController.dispose();
+    _accountHolderController.dispose();
     super.dispose();
   }
 
@@ -285,6 +291,70 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             const SizedBox(height: 24),
           ],
 
+          // 환불받을 계좌 정보 (가상계좌 환불 필수)
+          if (calculation.refundable) ...[
+            _buildSection(
+              title: '환불받을 계좌',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '토스 정책상 가상계좌 환불은 본인 명의 계좌로만 가능합니다.\n예금주명이 일치하지 않으면 환불이 거부됩니다.',
+                      style: TextStyle(fontSize: 12, color: const Color(0xFFB26A00), height: 1.4),
+                    ),
+                  ),
+                  // 은행 선택
+                  DropdownButtonFormField<String>(
+                    value: _selectedBankCode,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: '은행',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: kBankCodes
+                        .map((b) => DropdownMenuItem(value: b.code, child: Text(b.name)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedBankCode = v),
+                  ),
+                  const SizedBox(height: 12),
+                  // 계좌번호
+                  TextFormField(
+                    controller: _accountNumberController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '계좌번호',
+                      hintText: '- 없이 숫자만 입력',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // 예금주명
+                  TextFormField(
+                    controller: _accountHolderController,
+                    decoration: InputDecoration(
+                      labelText: '예금주명',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
           // 환불 사유
           _buildSection(
             title: '환불 사유 (선택)',
@@ -308,7 +378,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             ),
           ),
 
-          // 토스 카드결제 환불 안내
+          // 환불 처리 안내
           if (calculation.refundable) ...[
             const SizedBox(height: 24),
             Container(
@@ -320,11 +390,11 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.credit_card, color: AppColors.success, size: 24),
+                  Icon(Icons.account_balance, color: AppColors.success, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '결제하신 카드로 자동 환불됩니다.\n환불 처리는 카드사에 따라 3~5 영업일이 소요될 수 있습니다.',
+                      '입력하신 계좌로 환불 처리되며,\n영업일 기준 1~3일 내 입금됩니다.',
                       style: TextStyle(
                         color: AppColors.success,
                         fontSize: 14,
@@ -436,10 +506,31 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
   Future<void> _submitRefund(RefundCalculation calculation) async {
     if (!calculation.refundable) return;
 
+    // 환불계좌 검증 (가상계좌 환불은 계좌 정보 필수)
+    final accountNumber = _accountNumberController.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final accountHolder = _accountHolderController.text.trim();
+    if (_selectedBankCode == null || _selectedBankCode!.isEmpty) {
+      setState(() => _errorMessage = '환불받을 은행을 선택해주세요.');
+      return;
+    }
+    if (accountNumber.isEmpty) {
+      setState(() => _errorMessage = '계좌번호를 입력해주세요.');
+      return;
+    }
+    if (accountHolder.isEmpty) {
+      setState(() => _errorMessage = '예금주명을 입력해주세요.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    final selectedBank = kBankCodes.firstWhere(
+      (b) => b.code == _selectedBankCode,
+      orElse: () => const BankCode('', ''),
+    );
 
     try {
       final service = ref.read(paymentServiceProvider);
@@ -448,6 +539,10 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
         refundReason: _reasonController.text.trim().isNotEmpty
             ? _reasonController.text.trim()
             : '환불 요청',
+        refundBankCode: _selectedBankCode,
+        refundBankName: selectedBank.name,
+        refundAccountNumber: accountNumber,
+        refundAccountHolder: accountHolder,
       );
 
       if (mounted) {

@@ -16,7 +16,7 @@ import '../../../data/providers/user_provider.dart';
 import '../../contest/widgets/contest_status_badge.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 import '../../../data/providers/notification_provider.dart';
-import '../../profile/screens/my_registrations_screen.dart';
+import '../../profile/screens/my_registrations_screen.dart' show myRegistrationsProvider;
 
 /// 홈 화면 (코랄 오렌지 테마)
 class HomeScreen extends ConsumerWidget {
@@ -1250,12 +1250,7 @@ class HomeScreen extends ConsumerWidget {
                   const Spacer(),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const MyRegistrationsScreen(),
-                        ),
-                      );
+                      context.push('/profile/registrations');
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
@@ -1294,12 +1289,7 @@ class HomeScreen extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const MyRegistrationsScreen(),
-          ),
-        );
+        context.push('/profile/registrations');
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

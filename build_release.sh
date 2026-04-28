@@ -1,6 +1,6 @@
 #!/bin/bash
 # 프로덕션 릴리즈 빌드 스크립트
-# 사용법: ./build_release.sh
+# 사용법: ㅂ
 
 set -e
 

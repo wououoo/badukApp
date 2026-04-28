@@ -77,7 +77,7 @@ class _HostApplyScreenState extends ConsumerState<HostApplyScreen> {
                     const SizedBox(height: 8),
                     _buildBulletPoint('바둑 대회 직접 개최'),
                     _buildBulletPoint('참가자 관리 및 대진표 운영'),
-                    _buildBulletPoint('참가비 자동 입금 확인 (오픈뱅킹)'),
+                    _buildBulletPoint('참가비 결제 및 정산 관리'),
                   ],
                 ),
               ),

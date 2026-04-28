@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/user_provider.dart';
 import '../../../data/models/mcmahon_history.dart';
-import 'my_registrations_screen.dart';
 
 /// 내 정보 화면 (런너블 스타일)
 class ProfileScreen extends ConsumerWidget {
@@ -648,13 +647,6 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   _buildDivider(),
                   _buildMenuItem(
-                    icon: Icons.account_balance,
-                    title: '오픈뱅킹 연동',
-                    subtitle: user?.openbankingConnected == true ? '연동됨' : '연동 필요',
-                    onTap: () => context.push('/host/openbanking'),
-                  ),
-                  _buildDivider(),
-                  _buildMenuItem(
                     icon: Icons.notifications_active,
                     title: '참가자 알림 발송',
                     subtitle: '내 대회 참가자에게 푸시 발송',
@@ -764,12 +756,7 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.how_to_reg_outlined,
                   title: '내 참가신청',
                   subtitle: '참가 현황 및 결제 상태 확인',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MyRegistrationsScreen(),
-                    ),
-                  ),
+                  onTap: () => context.push('/profile/registrations'),
                 ),
                 _buildDivider(),
                 _buildMenuItem(
