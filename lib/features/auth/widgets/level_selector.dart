@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 /// 기력 레벨 선택 위젯 (동호인용)
 ///
-/// level 10-36 을 표시명으로 변환:
+/// level 10-48 을 표시명으로 변환:
 /// - 아마 9단(10) ~ 아마 1단(18)
-/// - 1급(19) ~ 18급(36)
+/// - 1급(19) ~ 30급(48)
 ///
-/// 9단~18급 선택 가능 (동호인 대회용)
+/// 9단~30급 선택 가능 (동호인 대회용)
 class LevelSelector extends StatefulWidget {
   final int? initialLevel;
   final ValueChanged<int> onLevelChanged;
@@ -30,8 +30,9 @@ class _LevelSelectorState extends State<LevelSelector> {
   static const List<String> _amaRanks = ['9단', '8단', '7단', '6단', '5단', '4단', '3단', '2단', '1단'];
   static const List<String> _gupRanks = [
     '1급', '2급', '3급', '4급', '5급', '6급', '7급', '8급', '9급', '10급',
-    '11급', '12급', '13급', '14급', '15급', '16급', '17급', '18급',
-  ]; // 18급까지만 (동호인용)
+    '11급', '12급', '13급', '14급', '15급', '16급', '17급', '18급', '19급', '20급',
+    '21급', '22급', '23급', '24급', '25급', '26급', '27급', '28급', '29급', '30급',
+  ]; // 30급까지 (동호인용)
 
   bool get _isSelected => _category != null && _rank != null;
 
@@ -48,7 +49,7 @@ class _LevelSelectorState extends State<LevelSelector> {
     if (level >= 10 && level <= 18) {
       _category = '아마';
       _rank = _amaRanks[level - 10];
-    } else if (level >= 19 && level <= 36) {
+    } else if (level >= 19 && level <= 48) {
       _category = '급';
       _rank = _gupRanks[level - 19];
     }
@@ -184,17 +185,17 @@ class _LevelSelectorState extends State<LevelSelector> {
   }
 }
 
-/// 기력 레벨을 표시명으로 변환 (동호인용: 아마단~18급)
+/// 기력 레벨을 표시명으로 변환 (동호인용: 아마단~30급)
 String levelToDisplayName(int level) {
   if (level >= 10 && level <= 18) {
     return '아마 ${19 - level}단';
-  } else if (level >= 19 && level <= 36) {
+  } else if (level >= 19 && level <= 48) {
     return '${level - 18}급';
   }
   return '알 수 없음';
 }
 
-/// 표시명을 기력 레벨로 변환 (동호인용: 아마단~18급)
+/// 표시명을 기력 레벨로 변환 (동호인용: 아마단~30급)
 int? displayNameToLevel(String displayName) {
   final amaMatch = RegExp(r'아마\s*(\d)단').firstMatch(displayName);
   if (amaMatch != null) {
@@ -205,7 +206,7 @@ int? displayNameToLevel(String displayName) {
   final gupMatch = RegExp(r'(\d+)급').firstMatch(displayName);
   if (gupMatch != null) {
     final gup = int.parse(gupMatch.group(1)!);
-    if (gup >= 1 && gup <= 18) {
+    if (gup >= 1 && gup <= 30) {
       return gup + 18;
     }
   }

@@ -109,7 +109,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    '가상계좌가 발급되며, 24시간 내에 입금하시면 참가신청이 확정됩니다.',
+                    '가상계좌가 발급되며, 2시간 내에 입금하시면 참가신청이 확정됩니다.',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,

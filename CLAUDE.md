@@ -157,3 +157,46 @@ src/main/java/badukContest/system/
 3. **contest 테이블 직접 조회 금지** - 모바일은 contest_homepage 사용
 4. 모바일 API는 반드시 `/mobile/` prefix 사용
 5. 새 모바일 컨트롤러는 `Mobile` prefix 붙이기
+
+---
+
+## Flutter 앱 릴리즈 빌드 (Android AAB)
+
+`build_release.sh` 스크립트로 자동화. **Windows에서는 Git Bash로 실행** (sed 사용).
+
+### 사용법
+
+```bash
+cd D:\git\baduk\baduk_app
+bash build_release.sh
+```
+
+### 자동 처리 단계
+
+| # | 작업 | 상세 |
+|---|------|------|
+| 1 | **API URL 자동 전환** | `lib/core/constants/api_constants.dart`의 `baseUrl`/`webUrl`을 `localhost` → `swissbaduk.org`로 sed 치환. 이미 운영 URL이면 스킵. localhost가 남아있으면 빌드 중단(에러). |
+| 2 | **빌드번호 자동 +1** | `pubspec.yaml`의 `version: x.y.z+N`에서 N을 자동 증가. |
+| 3 | **AAB 빌드** | `flutter build appbundle --release` 실행 → `build/app/outputs/bundle/release/app-release.aab` 생성. |
+| 4 | **빌드 정보 기록** | `api_constants.dart` 파일 끝에 `// [마지막 릴리즈] x.y.z+N (YYYY-MM-DD HH:MM)` 주석 추가 (이전 기록은 자동 제거). |
+
+### 주의사항
+
+- **sed 사용** → Windows PowerShell에서 동작 X. Git Bash 또는 WSL 필요.
+- 스크립트가 working tree의 코드를 직접 수정함 (`api_constants.dart`, `pubspec.yaml`). 빌드 후 commit 잊지 말 것.
+- 다시 로컬 개발하려면 `api_constants.dart`의 주석 처리된 `localhost` 라인을 수동으로 활성화 + `swissbaduk.org` 라인을 다시 주석 처리.
+- 빌드 실패 시 working tree가 운영 URL 상태로 남으므로 git 상태 확인 후 `git checkout` 으로 되돌리기.
+
+### 결과물
+
+- **AAB**: `build/app/outputs/bundle/release/app-release.aab` → Play Console 업로드
+- **iOS**: 별도 (`flutter build ios --release` 또는 `flutter build ipa`)
+- **Web**: 별도 (`flutter build web --release` → `build/web/` 호스팅)
+
+### 배포 전 체크리스트
+
+1. [ ] 변경된 모든 코드 commit
+2. [ ] `pubspec.yaml` versionName(`x.y.z`) 필요 시 수동 변경 (스크립트는 빌드번호만 +1)
+3. [ ] Git Bash에서 `bash build_release.sh` 실행
+4. [ ] 빌드 성공 확인 후 Play Console에 AAB 업로드
+5. [ ] `pubspec.yaml` + `api_constants.dart` 변경분 commit & push

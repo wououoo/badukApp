@@ -222,6 +222,7 @@ class MatchResult {
   final int? winnerId;
   final int? tableNumber;
   final bool isByeMatch;
+  final bool isNone; // 양패 (둘 다 패배 처리)
   final bool isCompleted;
   final int? group;  // DE 조 번호
 
@@ -238,6 +239,7 @@ class MatchResult {
     this.winnerId,
     this.tableNumber,
     this.isByeMatch = false,
+    this.isNone = false,
     this.isCompleted = false,
     this.group,
     this.team1Wins,
@@ -246,6 +248,11 @@ class MatchResult {
   });
 
   factory MatchResult.fromJson(Map<String, dynamic> json) {
+    // 양패: 백엔드 isNone (또는 하위호환 none) true
+    final bool none = json['isNone'] == true || json['none'] == true;
+    // 부전승: player2가 없는 진짜 부전승만. (isByeMatch가 양패와 합쳐져 오는 옛 응답 방어)
+    final bool bye = (json['player2Id'] == null && json['player2'] == null && !none)
+        || (json['isByeMatch'] == true && !none);
     return MatchResult(
       player1: json['player1'] ?? '',
       player2: json['player2'],
@@ -253,8 +260,9 @@ class MatchResult {
       player2Id: json['player2Id'],
       winnerId: json['winnerId'],
       tableNumber: json['tableNumber'],
-      isByeMatch: json['isByeMatch'] ?? (json['player2'] == null),
-      isCompleted: json['isCompleted'] ?? (json['winnerId'] != null),
+      isByeMatch: bye,
+      isNone: none,
+      isCompleted: json['isCompleted'] ?? (json['winnerId'] != null || none),
       group: json['group'],
       team1Wins: json['team1Wins'],
       team2Wins: json['team2Wins'],

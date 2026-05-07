@@ -11,6 +11,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/services/contest_service.dart';
 import '../../../data/services/chat_service.dart';
+import '../../../data/models/homepage_image.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/contest_provider.dart';
 import '../../../data/providers/user_provider.dart';
@@ -41,10 +42,29 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
   int _pairingSortIndex = 0; // 대진표 탭에서 선택된 부문 인덱스
   int _selectedRound = 1; // 대진표 탭에서 선택된 라운드
 
+  // 홈페이지 안내 이미지 (운영진이 올린 부문/상금/지도/대진표/결과 안내)
+  List<HomepageImage> _homepageImages = [];
+  final Set<int> _expandedImageIds = {};
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 7, vsync: this);
+    _loadHomepageImages();
+  }
+
+  Future<void> _loadHomepageImages() async {
+    final images = await ContestService().getHomepageImages(widget.contestId);
+    if (!mounted) return;
+    setState(() {
+      _homepageImages = images.where((i) => i.isVisible).toList()
+        ..sort((a, b) => (a.displayOrder ?? 0).compareTo(b.displayOrder ?? 0));
+    });
+  }
+
+  String _buildImageFullUrl(String imageUrl) {
+    if (imageUrl.startsWith('http')) return imageUrl;
+    return '${ApiConstants.baseUrl.replaceAll('/api', '')}$imageUrl';
   }
 
   @override
@@ -511,6 +531,11 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
             _buildGameMethodsSection(contest),
             const SizedBox(height: 20),
           ],
+          // 안내 이미지 섹션 (부문/상금/지도/대진표/결과 등 운영진 업로드)
+          if (_homepageImages.isNotEmpty) ...[
+            _buildHomepageImagesSection(),
+            const SizedBox(height: 20),
+          ],
           // 환불 규정
           RefundPolicySection(
             homepageId: widget.contestId,
@@ -851,6 +876,123 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// 홈페이지 안내 이미지 섹션 (부문/상금/지도/대진표/결과 등)
+  Widget _buildHomepageImagesSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _homepageImages.map(_buildHomepageImageItem).toList(),
+      ),
+    );
+  }
+
+  Widget _buildHomepageImageItem(HomepageImage image) {
+    final isAlways = image.displayMode == 'always';
+    final isExpanded = isAlways || _expandedImageIds.contains(image.id);
+    final title = (image.title == null || image.title!.isEmpty) ? '안내' : image.title!;
+
+    final header = isAlways
+        ? Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              title,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+          )
+        : InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedImageIds.remove(image.id);
+                } else {
+                  _expandedImageIds.add(image.id);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isExpanded ? '클릭하여 접기' : '클릭하여 펼치기',
+                          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: AppColors.textTertiary,
+                  ),
+                ],
+              ),
+            ),
+          );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          if (isExpanded) ...[
+            if (image.description != null && image.description!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  image.description!,
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                ),
+              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                _buildImageFullUrl(image.imageUrl),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  color: AppColors.background,
+                  alignment: Alignment.center,
+                  child: Icon(Icons.broken_image, color: AppColors.textTertiary),
+                ),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    height: 120,
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );

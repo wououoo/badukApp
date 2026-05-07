@@ -48,6 +48,14 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
       }
     };
 
+    // 401 → refresh 실패 시 호출됨 (ApiClient._clearTokensAndLogout)
+    // 토큰은 이미 삭제된 상태. AuthState를 unauthenticated로 전환하면
+    // 라우터(refreshListenable)가 자동으로 /login으로 리다이렉트
+    ApiClient.onUnauthorized = () {
+      if (!mounted) return;
+      ref.read(authProvider.notifier).logout();
+    };
+
     // 채팅 안읽은 수 폴링 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chatUnreadCountProvider.notifier).startPolling();
@@ -56,6 +64,9 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
 
   @override
   void dispose() {
+    // MainScreen이 트리에서 빠진 후 콜백이 발화하지 않도록 정리
+    ApiClient.onUnauthorized = null;
+    ApiClient.onUpdateRequired = null;
     WidgetsBinding.instance.removeObserver(this);
     ref.read(chatUnreadCountProvider.notifier).stopPolling();
     super.dispose();

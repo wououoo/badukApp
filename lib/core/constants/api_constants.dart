@@ -5,8 +5,8 @@ class ApiConstants {
   // 사용할 서버의 주석을 해제하세요
 
   // 로컬 개발 서버 (iOS 시뮬레이터, 웹)
-  // static const String baseUrl = 'http://localhost:8080/api';
-  // static const String webUrl = 'http://localhost:3000';  // 개발용 React 프론트엔드
+  // // static const String baseUrl = 'http://localhost:8080/api';
+  // // static const String webUrl = 'http://localhost:3000';  // 개발용 React 프론트엔드
 
   // 로컬 개발 서버 (Android 에뮬레이터용 - 10.0.2.2는 호스트 PC의 localhost)
   // static const String baseUrl = 'http://10.0.2.2:8080/api';
@@ -147,4 +147,4 @@ class ApiConstants {
   static const String privacyConsentWithdraw = '/mobile/privacy/consent/withdraw';
   static const String privacyPolicy = '/mobile/privacy/policy';
 }
-// [마지막 릴리즈] 1.1.2+41 (2026-04-28 07:34)
+// [마지막 릴리즈] 1.1.2+46 (2026-05-07 22:36)

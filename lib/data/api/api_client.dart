@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -131,7 +132,7 @@ class _AuthInterceptor extends QueuedInterceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // 빌드번호 + 기기 정보 헤더 추가 (웹이 아닌 경우에만)
+    // 빌드번호 + 플랫폼 헤더 추가 (웹이 아닌 경우에만)
     if (!kIsWeb) {
       if (_cachedBuildNumber == null) {
         try {
@@ -142,7 +143,14 @@ class _AuthInterceptor extends QueuedInterceptor {
       if (_cachedBuildNumber != null) {
         options.headers['X-App-Build'] = _cachedBuildNumber;
       }
-
+      // 플랫폼 구분 헤더 (Android/iOS 별도 버전 관리용)
+      try {
+        if (Platform.isIOS) {
+          options.headers['X-App-Platform'] = 'ios';
+        } else if (Platform.isAndroid) {
+          options.headers['X-App-Platform'] = 'android';
+        }
+      } catch (_) {}
     }
 
     // 토큰이 필요 없는 API (로그인/회원가입/OTP 등)
@@ -185,77 +193,85 @@ class _AuthInterceptor extends QueuedInterceptor {
 
       if (!_isRefreshing) {
         _isRefreshing = true;
+        bool refreshed = false;
 
         try {
-          // refreshToken 우선 사용, 없으면 accessToken 사용
+          // refreshToken만 사용 (access token으로 fallback 금지 — 보안상 분리 의미 유지)
           final refreshToken = await _storage.read(key: AppConstants.refreshTokenKey);
-          final oldToken = refreshToken ?? await _storage.read(key: AppConstants.accessTokenKey);
-          if (oldToken == null) {
-            handler.next(err);
-            return;
-          }
+          if (refreshToken == null || refreshToken.isEmpty) {
+            // refresh 토큰이 없으면 갱신 불가 → 즉시 로그아웃
+            if (kDebugMode) debugPrint('[Auth] refreshToken 없음 → 로그아웃');
+            await _clearTokensAndLogout();
+          } else {
+            // 별도 Dio 인스턴스로 refresh 요청 (인터셉터 무한루프 방지)
+            final refreshDio = Dio(BaseOptions(
+              baseUrl: ApiConstants.baseUrl,
+              connectTimeout: ApiConstants.connectTimeout,
+              receiveTimeout: ApiConstants.receiveTimeout,
+            ));
 
-          // 별도 Dio 인스턴스로 refresh 요청 (인터셉터 무한루프 방지)
-          final refreshDio = Dio(BaseOptions(
-            baseUrl: ApiConstants.baseUrl,
-            connectTimeout: ApiConstants.connectTimeout,
-            receiveTimeout: ApiConstants.receiveTimeout,
-          ));
+            final response = await refreshDio.post(
+              ApiConstants.mobileRefresh,
+              options: Options(
+                headers: {'Authorization': 'Bearer $refreshToken'},
+              ),
+            );
 
-          final response = await refreshDio.post(
-            ApiConstants.mobileRefresh,
-            options: Options(
-              headers: {'Authorization': 'Bearer $oldToken'},
-            ),
-          );
+            final newAccessToken = (response.data['accessToken'] ?? response.data['token']) as String?;
+            final newRefreshToken = response.data['refreshToken'] as String?;
 
-          final newAccessToken = (response.data['accessToken'] ?? response.data['token']) as String?;
-          final newRefreshToken = response.data['refreshToken'] as String?;
-
-          if (newAccessToken != null) {
-            await _storage.write(key: AppConstants.accessTokenKey, value: newAccessToken);
-            _cachedToken = newAccessToken; // 메모리 캐시 갱신
-            if (newRefreshToken != null) {
-              await _storage.write(key: AppConstants.refreshTokenKey, value: newRefreshToken);
-            }
-
-            // 원래 요청 재시도
-            err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-            final retryResponse = await refreshDio.fetch(err.requestOptions);
-            handler.resolve(retryResponse);
-
-            // 대기 중인 요청들도 재시도
-            for (final entry in _pendingRequests) {
-              entry.options.headers['Authorization'] = 'Bearer $newAccessToken';
-              try {
-                final r = await refreshDio.fetch(entry.options);
-                entry.handler.resolve(r);
-              } catch (e) {
-                entry.handler.next(DioException(
-                  requestOptions: entry.options,
-                  error: e,
-                ));
+            if (newAccessToken != null) {
+              await _storage.write(key: AppConstants.accessTokenKey, value: newAccessToken);
+              _cachedToken = newAccessToken; // 메모리 캐시 갱신
+              if (newRefreshToken != null) {
+                await _storage.write(key: AppConstants.refreshTokenKey, value: newRefreshToken);
               }
+
+              // 원래 요청 재시도
+              err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+              final retryResponse = await refreshDio.fetch(err.requestOptions);
+              handler.resolve(retryResponse);
+              refreshed = true;
+
+              // 대기 중인 요청들도 재시도
+              for (final entry in _pendingRequests) {
+                entry.options.headers['Authorization'] = 'Bearer $newAccessToken';
+                try {
+                  final r = await refreshDio.fetch(entry.options);
+                  entry.handler.resolve(r);
+                } catch (e) {
+                  entry.handler.next(DioException(
+                    requestOptions: entry.options,
+                    error: e,
+                  ));
+                }
+              }
+              _pendingRequests.clear();
+            } else {
+              // 응답에 토큰이 없으면 갱신 실패 → 로그아웃
+              if (kDebugMode) debugPrint('[Auth] refresh 응답에 토큰 없음 → 로그아웃');
+              await _clearTokensAndLogout();
             }
-            _pendingRequests.clear();
-            return;
           }
         } catch (e) {
-          if (kDebugMode) debugPrint('[Auth] Token refresh failed');
+          // 갱신 실패 (네트워크 에러, refreshToken 만료/무효 등) → 명확히 로그아웃
+          // 이전 동작(토큰 보존)은 무한 401 루프 유발했으므로 제거
+          if (kDebugMode) debugPrint('[Auth] Token refresh failed: $e');
+          await _clearTokensAndLogout();
         } finally {
           _isRefreshing = false;
         }
 
-        // refresh 실패 → 토큰 삭제하지 않음 (다음 앱 시작 시 재시도 가능)
-        // _clearTokensAndLogout() 호출 제거
-        _cachedToken = null;
-        for (final entry in _pendingRequests) {
-          entry.handler.next(DioException(
-            requestOptions: entry.options,
-            error: 'Token refresh failed',
-          ));
+        if (!refreshed) {
+          // 대기 중인 요청들 모두 실패 처리
+          for (final entry in _pendingRequests) {
+            entry.handler.next(DioException(
+              requestOptions: entry.options,
+              error: 'Token refresh failed',
+            ));
+          }
+          _pendingRequests.clear();
         }
-        _pendingRequests.clear();
       } else {
         // 이미 refresh 중이면 대기열에 추가
         _pendingRequests.add(_RetryEntry(err.requestOptions, handler));

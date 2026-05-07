@@ -350,28 +350,82 @@ class _TossCheckoutScreenState extends ConsumerState<TossCheckoutScreen> {
     });
   }
 
+  /// 뒤로가기 처리 (결제 진행 중 닫기 방지)
+  Future<bool> _handleBackPressed() async {
+    // 1. 결제 승인 중에는 절대 닫지 않음 (이중 결제/상태 불일치 위험)
+    if (_isConfirming) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('결제 처리 중입니다. 잠시만 기다려주세요.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return false;
+    }
+
+    // 2. 일반 결제창 단계: 사용자에게 확인
+    final shouldClose = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('결제를 취소하시겠어요?'),
+        content: const Text(
+          '결제가 완료되지 않습니다.\n계속 결제를 진행하려면 "계속하기"를 누르세요.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('계속하기'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('결제 취소'),
+          ),
+        ],
+      ),
+    );
+    return shouldClose == true;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.pop(false),
-        ),
-        title: Text(
-          '결제하기',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldClose = await _handleBackPressed();
+        if (shouldClose && mounted) {
+          context.pop(false);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () async {
+              final shouldClose = await _handleBackPressed();
+              if (shouldClose && mounted) {
+                context.pop(false);
+              }
+            },
           ),
+          title: Text(
+            '결제하기',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: Stack(
+        body: Stack(
         children: [
           if (kIsWeb)
             // Web: WebView 사용 불가, 같은 탭에서 외부 페이지로 이동 중
@@ -412,6 +466,7 @@ class _TossCheckoutScreenState extends ConsumerState<TossCheckoutScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }

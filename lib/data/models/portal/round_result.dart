@@ -30,6 +30,7 @@ class MatchResult {
   final int? winnerId;
   final int? tableNumber;
   final bool isBye;
+  final bool isNone; // 양패 (둘 다 패배 처리)
 
   MatchResult({
     this.player1,
@@ -40,6 +41,7 @@ class MatchResult {
     this.winnerId,
     this.tableNumber,
     this.isBye = false,
+    this.isNone = false,
   });
 
   factory MatchResult.fromJson(Map<String, dynamic> json) {
@@ -51,7 +53,9 @@ class MatchResult {
       winner: json['winner'],
       winnerId: json['winnerId'],
       tableNumber: json['tableNumber'],
-      isBye: json['player2'] == null && json['player2Id'] == null,
+      isBye: (json['isByeMatch'] == true) ||
+          (json['player2'] == null && json['player2Id'] == null),
+      isNone: json['isNone'] == true,
     );
   }
 

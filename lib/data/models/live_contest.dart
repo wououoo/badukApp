@@ -362,6 +362,7 @@ class LivePairing {
   final int? winnerId;
   final String? winnerName;
   final bool isByeMatch;
+  final bool isNone; // 양패 (둘 다 패배 처리)
   final bool isCompleted;
 
   // 단체전 보드별 결과
@@ -385,6 +386,7 @@ class LivePairing {
     this.winnerId,
     this.winnerName,
     this.isByeMatch = false,
+    this.isNone = false,
     this.isCompleted = false,
     this.boards = const [],
   });
@@ -394,12 +396,13 @@ class LivePairing {
     final p1Name = json['player1Name'] ?? json['player1'] ?? json['blackPlayer'];
     // 통일 필드: player2Name (하위호환: player2, whitePlayer)
     final p2Name = json['player2Name'] ?? json['player2'] ?? json['whitePlayer'];
-    // 통일 필드: isNone (하위호환: none)
+    // 통일 필드: isNone (하위호환: none) — 양패: 둘 다 패배 처리
     final isNone = json['isNone'] == true || json['none'] == true;
     // 통일 필드: isCompleted (하위호환: end)
-    final isEnd = json['isCompleted'] == true || json['end'] == true;
-    final isBye = json['isByeMatch'] == true || isNone ||
-        (p2Name == null || p2Name.toString().isEmpty);
+    final isEnd = json['isCompleted'] == true || json['end'] == true || isNone;
+    // 부전승: 진짜 부전승만 (player2 없음 또는 isByeMatch=true). 양패는 isBye에 포함하지 않음.
+    final isBye = !isNone && (json['isByeMatch'] == true ||
+        (p2Name == null || p2Name.toString().isEmpty));
 
     return LivePairing(
       id: json['id'],
@@ -421,6 +424,7 @@ class LivePairing {
       // 통일 필드: winnerName (하위호환: winner)
       winnerName: json['winnerName'] ?? json['winner'],
       isByeMatch: isBye,
+      isNone: isNone,
       isCompleted: isEnd,
     );
   }
@@ -525,6 +529,7 @@ class LivePairing {
   }
 
   String get resultText {
+    if (isNone) return '양패';
     if (isByeMatch) return '부전승';
     if (!isCompleted) return '진행중';
     if (winnerId == player1Id) return '흑승';

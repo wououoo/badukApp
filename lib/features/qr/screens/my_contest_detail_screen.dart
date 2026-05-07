@@ -2213,8 +2213,10 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
   }
 
   Widget _buildMatchCard(MatchResult match) {
-    final bool isPlayer1Winner = match.isCompleted && match.winnerId != null && match.winnerId == match.player1Id;
-    final bool isPlayer2Winner = match.isCompleted && match.winnerId != null && match.player2Id != null && match.winnerId == match.player2Id;
+    // 양패: 둘 다 패배 처리. 부전승보다 우선 판정 (isNone과 isByeMatch가 동시에 true이면 양패로 표시)
+    final bool isNoneMatch = match.isNone;
+    final bool isPlayer1Winner = !isNoneMatch && match.isCompleted && match.winnerId != null && match.winnerId == match.player1Id;
+    final bool isPlayer2Winner = !isNoneMatch && match.isCompleted && match.winnerId != null && match.player2Id != null && match.winnerId == match.player2Id;
     final bool hasBoards = match.boards.isNotEmpty;
 
     return Card(
@@ -2223,25 +2225,72 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: match.isCompleted ? AppColors.border : AppColors.info.withOpacity(0.3),
+          color: isNoneMatch
+              ? AppColors.error.withOpacity(0.3)
+              : (match.isCompleted ? AppColors.border : AppColors.info.withOpacity(0.3)),
         ),
       ),
       color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: match.isByeMatch
-            ? _buildByeMatchContent(match)
-            : Column(
-                children: [
-                  _buildNormalMatchContent(match, isPlayer1Winner, isPlayer2Winner),
-                  // 단체전 기별 대진 표시
-                  if (hasBoards) ...[
-                    const Divider(height: 16),
-                    _buildBoardMatchesContent(match),
-                  ],
-                ],
-              ),
+        child: isNoneMatch
+            ? _buildNoneMatchContent(match)
+            : match.isByeMatch
+                ? _buildByeMatchContent(match)
+                : Column(
+                    children: [
+                      _buildNormalMatchContent(match, isPlayer1Winner, isPlayer2Winner),
+                      // 단체전 기별 대진 표시
+                      if (hasBoards) ...[
+                        const Divider(height: 16),
+                        _buildBoardMatchesContent(match),
+                      ],
+                    ],
+                  ),
       ),
+    );
+  }
+
+  /// 양패 카드 (둘 다 패배 처리)
+  Widget _buildNoneMatchContent(MatchResult match) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            match.player1,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+              decoration: TextDecoration.lineThrough,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Text(
+            '양패',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.error),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            match.player2 ?? '',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+              decoration: TextDecoration.lineThrough,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 

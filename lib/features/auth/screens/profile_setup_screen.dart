@@ -47,6 +47,37 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     super.dispose();
   }
 
+  /// 가입 중단 후 로그인 화면으로 이동
+  ///
+  /// 라우터 가드(needsProfileSetup)가 /profile-setup으로 강제 redirect 하므로,
+  /// 빠져나가려면 logout()을 호출해 AuthState를 unauthenticated로 변경해야 함.
+  Future<void> _handleAbortToLogin() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('가입을 중단하시겠어요?'),
+        content: const Text('지금까지 입력한 정보가 모두 사라지고\n로그인 화면으로 돌아갑니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('계속하기'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('중단하기'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    await ref.read(authProvider.notifier).logout();
+    // 라우터 가드가 unauthenticated 상태 감지 시 자동으로 /login으로 이동
+  }
+
   /// 연동된 맥마흔 유저 정보로 초기값 설정
   void _initFromUser() {
     if (_initialized) return;
@@ -94,6 +125,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               )
             : null,
         automaticallyImplyLeading: false,
+        actions: [
+          TextButton(
+            onPressed: _isLoading ? null : _handleAbortToLogin,
+            child: const Text(
+              '처음으로',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Form(
@@ -350,7 +390,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     ? '• 맥마흔 점수는 대회 결과에 따라 자동 반영됩니다\n'
                       '• 아래 기력은 초기 대진표 배정에만 사용됩니다'
                     : '• 아마 9단~1단: 아마추어 고단자\n'
-                      '• 1급~18급: 일반 동호인',
+                      '• 1급~30급: 일반 동호인',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.blue[800],

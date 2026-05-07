@@ -34,9 +34,6 @@ class _RegistrationEditScreenState extends ConsumerState<RegistrationEditScreen>
   List<Map<String, dynamic>> _categories = [];
   bool _categoriesLoading = true;
 
-  /// 결제 완료 여부
-  bool get _isPaid => widget.currentData?['paymentStatus'] == 'COMPLETED';
-
   // 기력 목록 (신청 폼의 GAME_LEVEL_OPTIONS와 동일하게 30급부터)
   static const List<String> _ranks = [
     '30급', '29급', '28급', '27급', '26급', '25급', '24급', '23급', '22급', '21급',
@@ -245,7 +242,7 @@ class _RegistrationEditScreenState extends ConsumerState<RegistrationEditScreen>
                       value: _categories.any((c) => c['categoryId'] == _selectedCategoryId)
                           ? _selectedCategoryId
                           : null,
-                      decoration: _inputDecoration(_isPaid ? '결제 완료 후에는 변경 불가' : '부문을 선택하세요'),
+                      decoration: _inputDecoration('부문은 직접 변경 불가'),
                       isExpanded: true,
                       items: _categories.map((cat) {
                         final fee = cat['fee'] as int;
@@ -257,16 +254,16 @@ class _RegistrationEditScreenState extends ConsumerState<RegistrationEditScreen>
                           child: Text(label, overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
-                      onChanged: _isPaid ? null : (v) => setState(() => _selectedCategoryId = v),
+                      // 부문 변경은 정원 race / 결제 정합성 문제로 항상 차단. 취소 후 재신청만 가능.
+                      onChanged: null,
                     ),
-              if (_isPaid)
-                Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Text(
-                    '결제 완료 후에는 부문을 변경할 수 없습니다. 환불 후 재신청해주세요.',
-                    style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
-                  ),
+              Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  '부문은 직접 변경할 수 없습니다. 취소 후 원하시는 부문으로 재신청해주세요.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
                 ),
+              ),
               const SizedBox(height: 20),
 
               // 지역

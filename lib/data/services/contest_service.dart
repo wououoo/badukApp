@@ -5,6 +5,7 @@ import '../../core/constants/api_constants.dart';
 import '../models/contest.dart';
 import '../models/contest_photo.dart';
 import '../models/contest_sort.dart';
+import '../models/homepage_image.dart';
 import '../models/calendar_contest.dart';
 import 'cache_service.dart';
 
@@ -230,6 +231,28 @@ class ContestService {
     } catch (e) {
       debugPrint('[캘린더] 대회 조회 실패: $e');
       return [];
+    }
+  }
+
+  // ========== 홈페이지 안내 이미지 ==========
+
+  /// 홈페이지 안내 이미지 목록 조회
+  /// GET /contest-homepage/{homepageId}/images
+  /// 운영진이 올린 부문/상금/지도/대진표/결과 안내 이미지
+  Future<List<HomepageImage>> getHomepageImages(int homepageId) async {
+    try {
+      final response = await _apiClient.get('/contest-homepage/$homepageId/images');
+      final data = response.data;
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map((e) => HomepageImage.fromJson(e))
+            .toList();
+      }
+      return <HomepageImage>[];
+    } catch (e) {
+      debugPrint('[ContestService] 홈페이지 이미지 조회 실패: $e');
+      return <HomepageImage>[];
     }
   }
 

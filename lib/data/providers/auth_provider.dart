@@ -104,6 +104,33 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkAuthStatus();
   }
 
+  /// savedUser의 실제 identityVerified/profileCompleted 값으로 AuthState 복원
+  /// (네트워크 에러 등으로 서버 프로필 조회 실패 시 사용)
+  /// 강제 true 부여 금지 — 본인인증 미완료 사용자가 보호 기능 우회하는 것 방지
+  AuthState _restoreFromSavedUser(User savedUser) {
+    final identityVerified = savedUser.identityVerified ?? false;
+    final profileCompleted = savedUser.profileCompleted ?? false;
+
+    AuthStatus status;
+    if (profileCompleted) {
+      status = AuthStatus.authenticated;
+    } else if (identityVerified) {
+      status = AuthStatus.identityVerified;
+    } else {
+      status = AuthStatus.socialLoggedIn;
+    }
+
+    debugPrint('[Auth] savedUser 복원: name=${savedUser.name}, '
+        'identityVerified=$identityVerified, profileCompleted=$profileCompleted, status=$status');
+
+    return AuthState(
+      status: status,
+      user: savedUser,
+      identityVerified: identityVerified,
+      profileCompleted: profileCompleted,
+    );
+  }
+
   /// 초기 인증 상태 확인
   Future<void> _checkAuthStatus() async {
     if (_isCheckingAuth) return; // 중복 호출 방지
@@ -127,13 +154,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           onTimeout: () => null,
         );
         if (savedUser != null) {
-          debugPrint('[Auth] 토큰 없지만 저장된 사용자 정보로 인증 유지: ${savedUser.name}');
-          state = AuthState(
-            status: AuthStatus.authenticated,
-            user: savedUser,
-            identityVerified: true,
-            profileCompleted: true,
-          );
+          state = _restoreFromSavedUser(savedUser);
           return;
         }
         state = const AuthState(status: AuthStatus.unauthenticated);
@@ -158,13 +179,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // 프로필 조회 실패 → 저장된 사용자 정보로 인증 유지
         final savedUser = await _authService.getSavedUser();
         if (savedUser != null) {
-          debugPrint('[Auth] 저장된 사용자 정보로 인증 유지: ${savedUser.name}');
-          state = AuthState(
-            status: AuthStatus.authenticated,
-            user: savedUser,
-            identityVerified: true,
-            profileCompleted: true,
-          );
+          state = _restoreFromSavedUser(savedUser);
           return;
         }
         // 저장된 정보도 없으면 미인증 (logout 호출 안함 - 토큰 보존)
@@ -202,16 +217,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } on DioException catch (e) {
       debugPrint('[Auth] DioException: type=${e.type}, statusCode=${e.response?.statusCode}');
-      // 모든 에러(네트워크, 401, 서버에러)에서 저장된 정보로 인증 유지 시도
+      // 네트워크/서버 에러: 저장된 정보로 인증 유지 (실제 인증 단계 그대로 복원)
       final savedUser = await _authService.getSavedUser();
       if (savedUser != null) {
-        debugPrint('[Auth] 저장된 사용자 정보로 인증 유지: ${savedUser.name}');
-        state = AuthState(
-          status: AuthStatus.authenticated,
-          user: savedUser,
-          identityVerified: true,
-          profileCompleted: true,
-        );
+        state = _restoreFromSavedUser(savedUser);
         return;
       }
       // 저장된 유저가 없으면 생체 인증 시도
@@ -228,16 +237,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthState(status: AuthStatus.unauthenticated);
     } catch (e) {
       debugPrint('[Auth] _checkAuthStatus error: $e');
-      // 일반 에러 시에도 저장된 사용자 정보로 인증 유지 시도
+      // 일반 에러 시에도 저장된 사용자 정보로 인증 유지 (실제 인증 단계 그대로 복원)
       final savedUser = await _authService.getSavedUser();
       if (savedUser != null) {
-        debugPrint('[Auth] 에러 발생, 저장된 사용자 정보로 인증 유지');
-        state = AuthState(
-          status: AuthStatus.authenticated,
-          user: savedUser,
-          identityVerified: true,
-          profileCompleted: true,
-        );
+        state = _restoreFromSavedUser(savedUser);
       } else {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }

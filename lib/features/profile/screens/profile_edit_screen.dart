@@ -23,12 +23,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   bool _isLoading = false;
   bool _hasChanges = false;
 
-  // 기력 목록 (백엔드 level 체계: 아마 9단=10, 아마 1단=18, 1급=19, 18급=36)
+  // 기력 목록 (백엔드 level 체계: 아마 9단=10, 아마 1단=18, 1급=19, 30급=48)
   final List<Map<String, dynamic>> _levels = [
     // 아마 단 (level 10-18: 9단~1단)
     for (int i = 9; i >= 1; i--) {'value': 19 - i, 'label': '아마 $i단'},
-    // 급 (level 19-36: 1급~18급)
-    for (int i = 1; i <= 18; i++) {'value': 18 + i, 'label': '$i급'},
+    // 급 (level 19-48: 1급~30급)
+    for (int i = 1; i <= 30; i++) {'value': 18 + i, 'label': '$i급'},
   ];
 
   // 지역 목록 (공식 명칭)
