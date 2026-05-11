@@ -109,11 +109,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    '가상계좌가 발급되며, 2시간 내에 입금하시면 참가신청이 확정됩니다.',
+                    '• 가상계좌가 발급되며, 2시간 내에 입금하시면 참가신청이 확정됩니다.\n'
+                    '• 입금 완료 후 결제 확인까지 은행/PG사 시스템에 따라 수 분~수십 분이 소요될 수 있습니다.\n'
+                    '• 입금 후에도 "결제 대기"로 표시되면 잠시 후 새로고침해 주세요.',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
-                      height: 1.5,
+                      height: 1.6,
                     ),
                   ),
                 ],

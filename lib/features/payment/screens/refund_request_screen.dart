@@ -252,6 +252,21 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
                         color: AppColors.error,
                       ),
                     ),
+                    // 공제 분해 (정책 변수 있을 때만)
+                    if ((calculation.paymentPgUserPaid ?? 0) > 0) ...[
+                      const SizedBox(height: 6),
+                      _buildSubRow(
+                        '└ 결제 PG 수수료 (미환급)',
+                        '-${_formatNumber(calculation.paymentPgUserPaid!)}원',
+                      ),
+                    ],
+                    if ((calculation.refundPgUserPaid ?? 0) > 0) ...[
+                      const SizedBox(height: 6),
+                      _buildSubRow(
+                        '└ 환불 PG 수수료 (차감)',
+                        '-${_formatNumber(calculation.refundPgUserPaid!)}원',
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -259,6 +274,10 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
           ),
 
           const SizedBox(height: 24),
+
+          // === 환불 차감 분해 (정책 기반 분쟁 방지 안내) ===
+          _buildDeductionBreakdown(calculation),
+          const SizedBox(height: 16),
 
           // 환불 정책 안내
           if (calculation.policyDescription != null) ...[
@@ -447,6 +466,134 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
     );
   }
 
+  /// 환불 차감 분해 안내 (분쟁 방지)
+  /// - 당일 면제 적용 시 → 녹색 박스
+  /// - 환불 PG 수수료 차감 시 → 주황 강조 박스 (왜/얼마/면제 조건)
+  /// - 결제 PG 수수료 미환급 시 → 회색 안내
+  Widget _buildDeductionBreakdown(RefundCalculation calculation) {
+    final paymentPg = calculation.paymentPgUserPaid ?? 0;
+    final refundPg = calculation.refundPgUserPaid ?? 0;
+    final sameDay = calculation.sameDayApplied == true;
+
+    final notices = <Widget>[];
+
+    // 당일 면제 적용
+    if (sameDay) {
+      notices.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite, size: 18, color: Color(0xFF047857)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '결제 당일 취소 — 수수료 면제, 전액 ${_formatNumber(calculation.refundAmount)}원 환불됩니다.',
+                style: const TextStyle(
+                    fontSize: 13, color: Color(0xFF047857), fontWeight: FontWeight.w600, height: 1.5),
+              ),
+            ),
+          ],
+        ),
+      ));
+    }
+
+    // 환불 PG 수수료 강조 박스 (분쟁 방지)
+    if (refundPg > 0) {
+      notices.add(Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7ED),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFDBA74), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFFED7AA))),
+              ),
+              child: Text(
+                '⚠️ 환불 수수료 ${_formatNumber(refundPg)}원 차감 안내',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFC2410C)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _bulletLine('토스페이먼츠(결제대행사)가 가상계좌 환불 처리 시 부과하는 PG 환불 수수료로, 본 대회는 참가자 부담으로 설정되어 있습니다.'),
+            _bulletLine('환불액에서 ${_formatNumber(refundPg)}원이 이미 차감되어 표시되고 있습니다.'),
+            _bulletLine('결제 당일 취소 시에는 면제됩니다.'),
+            _bulletLine(
+                '예시: 결제 ${_formatNumber(calculation.originalAmount)}원 → 환불액 ${_formatNumber(calculation.refundAmount)}원 (환불율 ${calculation.refundRate}% + 수수료 차감 반영)'),
+          ],
+        ),
+      ));
+    }
+
+    // 결제 PG 미환급 안내
+    if (paymentPg > 0) {
+      notices.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFD1D5DB)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: Color(0xFF6B7280)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '결제 시 부담하신 결제 PG 수수료 ${_formatNumber(paymentPg)}원은 본 대회 정책상 환불되지 않습니다.',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.5),
+              ),
+            ),
+          ],
+        ),
+      ));
+    }
+
+    if (notices.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < notices.length; i++) ...[
+          notices[i],
+          if (i < notices.length - 1) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _bulletLine(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2, right: 8),
+            child: Text('•', style: TextStyle(fontSize: 13, color: Color(0xFFC2410C), fontWeight: FontWeight.w700)),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF4B3A1F), height: 1.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoRow(String label, String value, {TextStyle? valueStyle}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -471,6 +618,28 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 공제 분해용 보조 행 (들여쓰기 + 작은 글씨)
+  Widget _buildSubRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 12.5, color: Color(0xFFC2410C), fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 

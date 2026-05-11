@@ -12,7 +12,9 @@ import '../../../data/services/notification_service_stub.dart'
     if (dart.library.io) '../../../data/services/notification_service.dart';
 import '../../../data/api/api_client.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../data/models/homepage.dart';
 import '../widgets/refund_policy_section.dart';
+import '../widgets/payment_info_box.dart';
 
 /// 대회 참가신청 화면
 class ContestRegistrationScreen extends ConsumerStatefulWidget {
@@ -58,6 +60,9 @@ class _ContestRegistrationScreenState
   bool _agreedPersonalInfo = false;    // [필수] 개인정보 수집·이용
   bool _agreedThirdParty = false;      // [필수] 대회 주최측 제3자 제공
 
+  // 결제·환불 정책 표시용 (PaymentInfoBox 입력)
+  HomepageDetail? _homepageDetail;
+
   // 기력 옵션
   final _skillLevels = [
     '9단', '8단', '7단', '6단', '5단', '4단', '3단', '2단', '1단',
@@ -79,6 +84,26 @@ class _ContestRegistrationScreenState
   void initState() {
     super.initState();
     _initFromUserProfile();
+    _loadHomepageDetail();
+  }
+
+  Future<void> _loadHomepageDetail() async {
+    try {
+      final detail = await _homepageService.getHomepageDetail(widget.homepageId);
+      if (mounted) {
+        setState(() => _homepageDetail = detail);
+      }
+    } catch (e) {
+      debugPrint('[홈페이지 정책 조회 실패] $e');
+    }
+  }
+
+  /// 사용자가 실제 결제할 금액 = 참가비 + (정책상 사용자가 부담하는 결제 PG 수수료)
+  int _computeTotalPayAmount() {
+    final baseFee = _selectedCategory?.fee ?? 0;
+    if (baseFee <= 0) return 0;
+    final pgFee = _homepageDetail?.computeUserPaymentPgFee(baseFee) ?? 0;
+    return baseFee + pgFee;
   }
 
   void _initFromUserProfile() {
@@ -266,7 +291,7 @@ class _ContestRegistrationScreenState
       'participantName': participantName,
       'categoryName': _selectedCategory!.categoryName,
       'contestName': widget.contest.name,
-      'amount': _selectedCategory!.fee ?? 0,
+      'amount': _computeTotalPayAmount(),  // 참가비 + 정책 PG 수수료
       'homepageId': widget.homepageId,
       'contestStartDate': widget.contest.contestStartDate,
     });
@@ -425,11 +450,22 @@ class _ContestRegistrationScreenState
                 _buildPasswordSection(),
                 const SizedBox(height: 24),
 
-                // 환불 규정
-                RefundPolicySection(
-                  homepageId: widget.homepageId,
-                ),
-                const SizedBox(height: 24),
+                // 결제 안내 + 환불 정책 (부문 선택 후 + 유료 부문일 때만 PaymentInfoBox)
+                if (_selectedCategory != null
+                    && _selectedCategory!.hasFee
+                    && _homepageDetail != null) ...[
+                  PaymentInfoBox(
+                    homepage: _homepageDetail!,
+                    baseFee: _selectedCategory!.fee ?? 0,
+                  ),
+                  const SizedBox(height: 24),
+                ] else ...[
+                  // 부문 미선택 또는 무료 부문 — 환불 규정만 표시
+                  RefundPolicySection(
+                    homepageId: widget.homepageId,
+                  ),
+                  const SizedBox(height: 24),
+                ],
 
                 // 동의 체크박스
                 _buildAgreementSection(),
@@ -1339,7 +1375,7 @@ class _ContestRegistrationScreenState
               )
             : Text(
                 _selectedCategory?.hasFee == true
-                    ? '${_formatNumber(_selectedCategory!.fee!)}원 결제하기'
+                    ? '${_formatNumber(_computeTotalPayAmount())}원 결제하기'
                     : '참가신청',
                 style: const TextStyle(
                   fontSize: 16,

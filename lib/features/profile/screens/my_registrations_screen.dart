@@ -289,6 +289,27 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.access_time, size: 14, color: Color(0xFFB26A00)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '입금 완료 후 결제 확인까지 은행/PG사 시스템에 따라 수 분~수십 분이 소요될 수 있습니다.\n잠시 후 새로고침해 주세요.',
+                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF8B5A00), height: 1.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -227,6 +227,16 @@ class RefundCalculation {
   final String? contestName;
   final String? contestDate;
 
+  // === 환불 차감 분해 (정책 기반 안내용) ===
+  /// 홈페이지 ID — 정책 추가 조회용
+  final int? homepageId;
+  /// 사용자 부담 결제 PG 수수료 (환불 시 미환급 금액)
+  final int? paymentPgUserPaid;
+  /// 사용자 부담 환불 PG 수수료 (환불 처리 시 차감 금액)
+  final int? refundPgUserPaid;
+  /// 당일 면제 적용 여부 (true: 정책 무시 + 전액 환불)
+  final bool? sameDayApplied;
+
   RefundCalculation({
     required this.registrationId,
     required this.originalAmount,
@@ -241,6 +251,10 @@ class RefundCalculation {
     this.categoryName,
     this.contestName,
     this.contestDate,
+    this.homepageId,
+    this.paymentPgUserPaid,
+    this.refundPgUserPaid,
+    this.sameDayApplied,
   });
 
   factory RefundCalculation.fromJson(Map<String, dynamic> json) {
@@ -258,6 +272,10 @@ class RefundCalculation {
       categoryName: json['categoryName'],
       contestName: json['contestName'],
       contestDate: json['contestDate'],
+      homepageId: (json['homepageId'] as num?)?.toInt(),
+      paymentPgUserPaid: (json['paymentPgUserPaid'] as num?)?.toInt(),
+      refundPgUserPaid: (json['refundPgUserPaid'] as num?)?.toInt(),
+      sameDayApplied: json['sameDayApplied'] as bool?,
     );
   }
 }
