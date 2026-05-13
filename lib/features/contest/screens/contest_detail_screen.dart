@@ -1432,14 +1432,25 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
 
         // prizeTitle별 rankName -> prizeContent 매핑
         final prizeData = <String, Map<String, String>>{};
+        // prizeTitle별 remarks (비고)
+        final prizeRemarks = <String, String>{};
         for (final title in prizeTitles) {
           prizeData[title] = {};
           for (final prize in normalPrizes) {
             if (prize.prizeTitle == title && prize.rankName != null) {
               prizeData[title]![prize.rankName!] = prize.prizeContent ?? '-';
             }
+            // 같은 prizeTitle 안에서 remarks가 있는 첫 행 사용
+            if (prize.prizeTitle == title
+                && prize.remarks != null
+                && prize.remarks!.trim().isNotEmpty
+                && !prizeRemarks.containsKey(title)) {
+              prizeRemarks[title] = prize.remarks!;
+            }
           }
         }
+        // 한 부문이라도 remarks 있으면 비고 컬럼 표시
+        final hasRemarks = prizeRemarks.isNotEmpty;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 20),
@@ -1485,7 +1496,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               ),
               // 일반 상금 테이블
               if (normalPrizes.isNotEmpty)
-                _buildPrizeTableWithFixedColumn(prizeTitles, rankNames, prizeData),
+                _buildPrizeTableWithFixedColumn(prizeTitles, rankNames, prizeData, prizeRemarks, hasRemarks),
               // isFullRow 상금: 전체 너비로 표시 (웹의 colspan과 동일)
               ...spanningPrizes.map((prize) => Container(
                 width: double.infinity,
@@ -1532,8 +1543,10 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
     List<String> prizeTitles,
     List<String> rankNames,
     Map<String, Map<String, String>> prizeData,
+    Map<String, String> prizeRemarks,
+    bool hasRemarks,
   ) {
-    final allColumns = ['시상 내역', ...rankNames];
+    final allColumns = ['시상 내역', ...rankNames, if (hasRemarks) '비고'];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -1595,6 +1608,19 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
                     ),
                   );
                 }),
+                // 비고 컬럼
+                if (hasRemarks)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Text(
+                      prizeRemarks[title] ?? '',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
               ],
             );
           }),

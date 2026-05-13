@@ -641,6 +641,7 @@ class ContestPrize {
   final String? prizeContent;
   final int? displayOrder;
   final bool isFullRow;
+  final String? remarks; // 비고 (장학금/철원사랑상품권 등)
 
   ContestPrize({
     required this.id,
@@ -650,6 +651,7 @@ class ContestPrize {
     this.prizeContent,
     this.displayOrder,
     this.isFullRow = false,
+    this.remarks,
   });
 
   factory ContestPrize.fromJson(Map<String, dynamic> json) {
@@ -661,6 +663,7 @@ class ContestPrize {
       prizeContent: json['prizeContent'],
       displayOrder: json['displayOrder'],
       isFullRow: json['isFullRow'] == true,
+      remarks: json['remarks'] as String?,
     );
   }
 }
