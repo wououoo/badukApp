@@ -237,6 +237,15 @@ class RefundCalculation {
   /// 당일 면제 적용 여부 (true: 정책 무시 + 전액 환불)
   final bool? sameDayApplied;
 
+  // === 분쟁 방지용 안내 라인 묶음 (백엔드 단일 출처) ===
+  /// 환불 수수료 강조 박스 본문 라인들 (null 또는 비어있으면 박스 표시 X)
+  /// 백엔드만 수정하면 앱 빌드 불필요 — 토스 정책 변경 시 즉시 반영
+  final List<String>? refundFeeNoticeLines;
+  /// 환불 수수료 박스 제목 (예: "⚠️ 환불 수수료 400원 차감 안내")
+  final String? refundFeeNoticeTitle;
+  /// 결제 PG 미환급 안내 라인 (null 또는 비어있으면 표시 X)
+  final List<String>? paymentFeeNoticeLines;
+
   RefundCalculation({
     required this.registrationId,
     required this.originalAmount,
@@ -255,9 +264,18 @@ class RefundCalculation {
     this.paymentPgUserPaid,
     this.refundPgUserPaid,
     this.sameDayApplied,
+    this.refundFeeNoticeLines,
+    this.refundFeeNoticeTitle,
+    this.paymentFeeNoticeLines,
   });
 
   factory RefundCalculation.fromJson(Map<String, dynamic> json) {
+    List<String>? parseLines(dynamic raw) {
+      if (raw is List) {
+        return raw.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      }
+      return null;
+    }
     return RefundCalculation(
       registrationId: json['registrationId'] ?? 0,
       originalAmount: json['originalAmount'] ?? 0,
@@ -276,6 +294,9 @@ class RefundCalculation {
       paymentPgUserPaid: (json['paymentPgUserPaid'] as num?)?.toInt(),
       refundPgUserPaid: (json['refundPgUserPaid'] as num?)?.toInt(),
       sameDayApplied: json['sameDayApplied'] as bool?,
+      refundFeeNoticeLines: parseLines(json['refundFeeNoticeLines']),
+      refundFeeNoticeTitle: json['refundFeeNoticeTitle'],
+      paymentFeeNoticeLines: parseLines(json['paymentFeeNoticeLines']),
     );
   }
 }

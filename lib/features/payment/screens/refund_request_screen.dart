@@ -492,7 +492,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '결제 당일 취소 — 수수료 면제, 전액 ${_formatNumber(calculation.refundAmount)}원 환불됩니다.',
+                '결제 당일 취소 — 환불율 100% 적용, ${_formatNumber(calculation.refundAmount)}원이 환불됩니다.',
                 style: const TextStyle(
                     fontSize: 13, color: Color(0xFF047857), fontWeight: FontWeight.w600, height: 1.5),
               ),
@@ -502,8 +502,11 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
       ));
     }
 
-    // 환불 PG 수수료 강조 박스 (분쟁 방지)
-    if (refundPg > 0) {
+    // 환불 PG 수수료 강조 박스 (분쟁 방지) — 백엔드 응답의 noticeLines를 그대로 표시
+    // 토스 정책 변경 시 백엔드만 수정하면 앱 빌드 없이 즉시 반영됨
+    final feeLines = calculation.refundFeeNoticeLines;
+    final feeTitle = calculation.refundFeeNoticeTitle;
+    if (refundPg > 0 && feeLines != null && feeLines.isNotEmpty) {
       notices.add(Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
@@ -520,23 +523,20 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
                 border: Border(bottom: BorderSide(color: Color(0xFFFED7AA))),
               ),
               child: Text(
-                '⚠️ 환불 수수료 ${_formatNumber(refundPg)}원 차감 안내',
+                feeTitle ?? '⚠️ 환불 수수료 ${_formatNumber(refundPg)}원 차감 안내',
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFC2410C)),
               ),
             ),
             const SizedBox(height: 8),
-            _bulletLine('토스페이먼츠(결제대행사)가 가상계좌 환불 처리 시 부과하는 PG 환불 수수료로, 본 대회는 참가자 부담으로 설정되어 있습니다.'),
-            _bulletLine('환불액에서 ${_formatNumber(refundPg)}원이 이미 차감되어 표시되고 있습니다.'),
-            _bulletLine('결제 당일 취소 시에는 면제됩니다.'),
-            _bulletLine(
-                '예시: 결제 ${_formatNumber(calculation.originalAmount)}원 → 환불액 ${_formatNumber(calculation.refundAmount)}원 (환불율 ${calculation.refundRate}% + 수수료 차감 반영)'),
+            ...feeLines.map((line) => _bulletLine(line)).toList(),
           ],
         ),
       ));
     }
 
-    // 결제 PG 미환급 안내
-    if (paymentPg > 0) {
+    // 결제 PG 미환급 안내 — 백엔드 응답 사용 (백엔드만 수정해도 앱 자동 반영)
+    final payLines = calculation.paymentFeeNoticeLines;
+    if (paymentPg > 0 && payLines != null && payLines.isNotEmpty) {
       notices.add(Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -550,9 +550,17 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             const Icon(Icons.info_outline, size: 18, color: Color(0xFF6B7280)),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                '결제 시 부담하신 결제 PG 수수료 ${_formatNumber(paymentPg)}원은 본 대회 정책상 환불되지 않습니다.',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: payLines
+                    .map((line) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            line,
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563), height: 1.5),
+                          ),
+                        ))
+                    .toList(),
               ),
             ),
           ],

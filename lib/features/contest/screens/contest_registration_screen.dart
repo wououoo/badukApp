@@ -49,6 +49,13 @@ class _ContestRegistrationScreenState
   final _childAcademyController = TextEditingController();
   final _childBirthYearController = TextEditingController();
 
+  // FocusNodes — 검증 실패 시 첫 invalid 필드로 자동 focus + 스크롤
+  final _nameFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _childNameFocus = FocusNode();
+  final _childBirthYearFocus = FocusNode();
+
   // State
   ContestCategory? _selectedCategory;
   bool _isForChild = false; // false: 본인 신청, true: 자녀 대리 신청
@@ -132,11 +139,21 @@ class _ContestRegistrationScreenState
     _childSchoolController.dispose();
     _childAcademyController.dispose();
     _childBirthYearController.dispose();
+    _nameFocus.dispose();
+    _phoneFocus.dispose();
+    _passwordFocus.dispose();
+    _childNameFocus.dispose();
+    _childBirthYearFocus.dispose();
     super.dispose();
   }
 
   Future<void> _submitRegistration() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // 검증 실패 시 첫 invalid 필드로 자동 focus + 스크롤
+      // (validator만으로는 화면 밖 필드에서 사용자가 인지하지 못함)
+      _focusFirstInvalidField();
+      return;
+    }
     if (_selectedCategory == null) {
       _showError('참가 부문을 선택해주세요.');
       return;
@@ -839,6 +856,7 @@ class _ContestRegistrationScreenState
         children: [
           _buildTextField(
             controller: _nameController,
+            focusNode: _nameFocus,
             label: '이름',
             hint: '실명을 입력하세요',
             required: true,
@@ -847,6 +865,7 @@ class _ContestRegistrationScreenState
           const SizedBox(height: 14),
           _buildTextField(
             controller: _phoneController,
+            focusNode: _phoneFocus,
             label: '연락처',
             hint: '010-0000-0000',
             required: true,
@@ -886,6 +905,7 @@ class _ContestRegistrationScreenState
       subtitle: '대회 관련 연락을 받을 번호입니다',
       child: _buildTextField(
         controller: _phoneController,
+        focusNode: _phoneFocus,
         label: '보호자 휴대폰',
         hint: '010-0000-0000',
         required: true,
@@ -903,6 +923,7 @@ class _ContestRegistrationScreenState
         children: [
           _buildTextField(
             controller: _childNameController,
+            focusNode: _childNameFocus,
             label: '자녀 이름',
             hint: '실명을 입력하세요',
             required: true,
@@ -919,13 +940,20 @@ class _ContestRegistrationScreenState
           const SizedBox(height: 14),
           _buildTextField(
             controller: _childBirthYearController,
+            focusNode: _childBirthYearFocus,
             label: '출생년도',
             hint: '예: 2015',
+            required: true,
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(4),
             ],
+            validator: (v) {
+              if (v?.isEmpty ?? true) return '출생년도를 입력하세요';
+              if (v!.length != 4) return '4자리 연도를 입력하세요';
+              return null;
+            },
           ),
           const SizedBox(height: 14),
           _buildTextField(
@@ -1188,6 +1216,7 @@ class _ContestRegistrationScreenState
       subtitle: '참가신청 조회/취소 시 사용됩니다',
       child: _buildTextField(
         controller: _passwordController,
+        focusNode: _passwordFocus,
         label: '비밀번호',
         hint: '숫자 4자리',
         required: true,
@@ -1431,6 +1460,49 @@ class _ContestRegistrationScreenState
     );
   }
 
+  /// 폼 검증 실패 시 첫 번째 invalid 필드로 focus + 자동 스크롤.
+  /// 사용자가 화면 아래 비밀번호 등을 못 보고 "참가신청 안 됨" 으로 인식하는 문제 방지.
+  void _focusFirstInvalidField() {
+    // 폼 위에서 아래 순서대로 검증 — 가장 위쪽 invalid 필드를 우선 focus
+    FocusNode? target;
+    if (_isForChild) {
+      if (_phoneController.text.trim().isEmpty) {
+        target = _phoneFocus;
+      } else if (_childNameController.text.trim().isEmpty) {
+        target = _childNameFocus;
+      } else {
+        final by = _childBirthYearController.text.trim();
+        if (by.isEmpty || by.length != 4) target = _childBirthYearFocus;
+      }
+    } else {
+      if (_nameController.text.trim().isEmpty) {
+        target = _nameFocus;
+      } else if (_phoneController.text.trim().isEmpty) {
+        target = _phoneFocus;
+      }
+    }
+    // 비밀번호 — 본인/자녀 공통, 보통 화면 아래쪽이라 가장 자주 놓침
+    if (target == null) {
+      final pw = _passwordController.text;
+      if (pw.isEmpty || pw.length != 4) target = _passwordFocus;
+    }
+    if (target == null) return;
+
+    // focus 요청 + 다음 프레임에서 해당 위젯이 화면에 보이도록 스크롤
+    FocusScope.of(context).requestFocus(target);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = target!.context;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.3, // 화면 위쪽 30% 지점에 위치
+        );
+      }
+    });
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -1440,9 +1512,11 @@ class _ContestRegistrationScreenState
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
+    FocusNode? focusNode,
   }) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,

@@ -93,7 +93,7 @@ class PaymentInfoBox extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
 
-          // 당일 취소 안내
+          // 당일 취소 안내 (토스 2026-05-14 정책: 당일도 환불 수수료 차감)
           if (sameDayFree && totalAmount > 0)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -111,7 +111,9 @@ class PaymentInfoBox extends ConsumerWidget {
                     style: TextStyle(fontSize: 13, color: Color(0xFF047857), fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    '전액 환불 ${_fmt(totalAmount)}원',
+                    isUserPaysRefundFee && refundFeeFixed > 0
+                        ? '환불율 100% (수수료 ${_fmt(refundFeeFixed)}원 차감)'
+                        : '전액 환불 ${_fmt(totalAmount)}원',
                     style: const TextStyle(fontSize: 13, color: Color(0xFF047857), fontWeight: FontWeight.w700),
                   ),
                 ],
@@ -327,7 +329,15 @@ class PaymentInfoBox extends ConsumerWidget {
     final notices = <Widget>[];
 
     if (sameDayFree) {
-      notices.add(_noticeLine('당일 취소 시 환불율과 무관하게 전액 환불됩니다.', boldStart: '※ ', boldKeywords: ['당일 취소', '전액 환불']));
+      if (isUserPaysRefundFee && refundFeeFixed > 0) {
+        notices.add(_noticeLine(
+          '당일 취소 시 환불율 100%가 적용되며, 환불 수수료 ${_fmt(refundFeeFixed)}원은 차감됩니다.',
+          boldStart: '※ ',
+          boldKeywords: ['당일 취소', '환불율 100%', '환불 수수료 ${_fmt(refundFeeFixed)}원'],
+        ));
+      } else {
+        notices.add(_noticeLine('당일 취소 시 환불율과 무관하게 전액 환불됩니다.', boldStart: '※ ', boldKeywords: ['당일 취소', '전액 환불']));
+      }
     }
 
     if (isUserPaysPaymentFee && !paymentFeeRefundOnCancel && pgFeeAmount > 0) {
@@ -448,13 +458,13 @@ class PaymentInfoBox extends ConsumerWidget {
             boldKeywords: const ['가상계좌 환불 처리 시', '참가자 부담'],
           ),
           _bulletItem(
-            '다음 날 이후 환불 시 환불액에서 ${_fmt(refundFeeFixed)}원이 자동 차감되어 입금됩니다.',
-            boldKeywords: ['${_fmt(refundFeeFixed)}원이 자동 차감'],
+            '환불 시 환불액에서 ${_fmt(refundFeeFixed)}원이 자동 차감되어 입금됩니다. 결제 당일(같은 날) 취소도 동일하게 차감됩니다. (토스 가상계좌 정책)',
+            boldKeywords: ['${_fmt(refundFeeFixed)}원이 자동 차감', '결제 당일(같은 날) 취소도 동일하게 차감'],
           ),
           if (sameDayFree)
             _bulletItem(
-              '결제 당일(같은 날) 취소 시에는 차감되지 않으며 결제하신 금액 전액이 환불됩니다.',
-              boldKeywords: const ['결제 당일(같은 날) 취소', '차감되지 않으며'],
+              '결제 당일(같은 날) 취소 시에는 환불 정책과 무관하게 환불율 100%가 적용되어, 환불 수수료 ${_fmt(refundFeeFixed)}원만 차감된 금액이 입금됩니다.',
+              boldKeywords: const ['결제 당일(같은 날) 취소', '환불율 100%'],
             ),
           if (totalAmount > 0)
             _bulletItem(

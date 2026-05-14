@@ -708,15 +708,20 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: valueColor ?? AppColors.textPrimary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              softWrap: true,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: valueColor ?? AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -842,6 +847,11 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
         bg = const Color(0xFFFEE2E2);
         text = const Color(0xFF991B1B);
         label = '거절됨';
+        break;
+      case 'FAILED':
+        bg = const Color(0xFFFEE2E2);
+        text = const Color(0xFF991B1B);
+        label = '실패';
         break;
       default: // REQUESTED
         bg = AppColors.statusSoonBg;
