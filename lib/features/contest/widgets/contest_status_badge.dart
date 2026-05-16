@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
-/// 대회 상태 타입
+/// 대회 상태 타입 (백엔드 ContestHomepage.getContestStatus()와 1:1)
 enum ContestStatus {
+  upcoming, // 접수 예정 (접수 시작 전)
   open,     // 접수중
-  ended,    // 접수종료
-  soon,     // 임박 (D-7 이내)
+  ended,    // 접수종료 (접수 마감 ~ 대회 시작 전)
+  soon,     // 임박 (D-7 이내) — 클라이언트 전용 (현재 미사용)
   live,     // 진행중
   closed,   // 종료됨
 }
@@ -21,60 +22,36 @@ class ContestStatusBadge extends StatelessWidget {
     this.dDay,
   });
 
-  /// 문자열로부터 상태 파싱
+  /// 백엔드의 contestStatus 문자열만으로 상태 결정 (단일 출처)
+  /// 인자로 받는 contestDate/contestEndDate는 클라이언트 재계산 폐기로 무시됨
+  /// (백엔드 ContestHomepage.getContestStatus()가 Asia/Seoul 기준 권위 있는 값)
   factory ContestStatusBadge.fromString(String? statusStr, {DateTime? contestDate, DateTime? contestEndDate}) {
     ContestStatus status;
-    int? dDay;
-
-    // D-Day 계산 (시작일/종료일 기반)
-    if (contestDate != null) {
-      final today = DateTime.now();
-      final todayOnly = DateTime(today.year, today.month, today.day);
-      final startOnly = DateTime(contestDate.year, contestDate.month, contestDate.day);
-      final endOnly = contestEndDate != null
-          ? DateTime(contestEndDate.year, contestEndDate.month, contestEndDate.day)
-          : startOnly; // 종료일 없으면 시작일 = 종료일 (1일 대회)
-
-      final diffToStart = startOnly.difference(todayOnly).inDays;
-      dDay = diffToStart;
-
-      if (todayOnly.isAfter(endOnly)) {
-        // 오늘이 종료일 이후 → 종료
-        status = ContestStatus.closed;
-      } else if (!todayOnly.isBefore(startOnly) && !todayOnly.isAfter(endOnly)) {
-        // 오늘이 시작일~종료일 사이 → 진행중
-        status = ContestStatus.live;
-      } else if (diffToStart <= 7) {
-        // 시작일까지 7일 이내 → 임박
-        status = ContestStatus.soon;
-      } else {
+    switch (statusStr?.toUpperCase()) {
+      case '접수예정':
+      case 'UPCOMING':
+        status = ContestStatus.upcoming;
+        break;
+      case '접수중':
+      case 'OPEN':
         status = ContestStatus.open;
-      }
-    } else {
-      // 문자열로 판단
-      switch (statusStr?.toLowerCase()) {
-        case '접수중':
-        case 'open':
-          status = ContestStatus.open;
-          break;
-        case '접수종료':
-        case 'ended':
-          status = ContestStatus.ended;
-          break;
-        case '진행중':
-        case 'live':
-          status = ContestStatus.live;
-          break;
-        case '종료됨':
-        case 'closed':
-          status = ContestStatus.closed;
-          break;
-        default:
-          status = ContestStatus.open;
-      }
+        break;
+      case '접수종료':
+      case 'ENDED':
+        status = ContestStatus.ended;
+        break;
+      case '진행중':
+      case 'LIVE':
+        status = ContestStatus.live;
+        break;
+      case '종료됨':
+      case 'CLOSED':
+        status = ContestStatus.closed;
+        break;
+      default:
+        status = ContestStatus.open;
     }
-
-    return ContestStatusBadge(status: status, dDay: dDay);
+    return ContestStatusBadge(status: status);
   }
 
   @override
@@ -98,6 +75,8 @@ class ContestStatusBadge extends StatelessWidget {
 
   String get _label {
     switch (status) {
+      case ContestStatus.upcoming:
+        return '접수 예정';
       case ContestStatus.open:
         return '접수중';
       case ContestStatus.ended:
@@ -116,10 +95,12 @@ class ContestStatusBadge extends StatelessWidget {
 
   Color get _backgroundColor {
     switch (status) {
+      case ContestStatus.upcoming:
+        return AppColors.statusSoonBg;  // 임박과 비슷한 노란 톤
       case ContestStatus.open:
         return AppColors.statusOpenBg;
       case ContestStatus.ended:
-        return AppColors.statusSoonBg;  // 접수종료는 임박과 같은 색상
+        return AppColors.statusSoonBg;
       case ContestStatus.soon:
         return AppColors.statusSoonBg;
       case ContestStatus.live:
@@ -131,10 +112,12 @@ class ContestStatusBadge extends StatelessWidget {
 
   Color get _textColor {
     switch (status) {
+      case ContestStatus.upcoming:
+        return AppColors.statusSoonText;
       case ContestStatus.open:
         return AppColors.statusOpenText;
       case ContestStatus.ended:
-        return AppColors.statusSoonText;  // 접수종료는 임박과 같은 색상
+        return AppColors.statusSoonText;
       case ContestStatus.soon:
         return AppColors.statusSoonText;
       case ContestStatus.live:

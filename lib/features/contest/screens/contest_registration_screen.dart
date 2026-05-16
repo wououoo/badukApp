@@ -203,7 +203,10 @@ class _ContestRegistrationScreenState
           mobileUserId: mobileUserId,
         );
       } else {
-        // 본인 신청
+        // 본인 신청 — type은 선택한 부문의 contestType을 그대로 따름
+        // (어린이 부문에 본인이 직접 신청하면 type='CHILD'로 저장 → 데이터 일관성)
+        final selfRegType = (_selectedCategory?.contestType?.toUpperCase() ?? 'ADULT');
+        final isChildSelf = selfRegType == 'CHILD';
         registration = RegistrationData(
           homepageId: widget.homepageId,
           categoryId: _selectedCategory!.id,
@@ -211,9 +214,15 @@ class _ContestRegistrationScreenState
           skillLevel: _selectedSkillLevel ?? '',
           phone: _phoneController.text.trim(),
           password: _passwordController.text,
-          type: 'ADULT',
-          region: _selectedRegion,
-          club: _clubController.text.trim(),
+          type: selfRegType,
+          // 어린이 부문 본인 신청 — 학교/학원/출생년도 + 본인 연락처를 보호자 연락처로도 사용
+          school: isChildSelf ? _childSchoolController.text.trim() : null,
+          academy: isChildSelf ? _childAcademyController.text.trim() : null,
+          birthYear: isChildSelf ? _childBirthYearController.text.trim() : null,
+          parentPhone: isChildSelf ? _phoneController.text.trim() : null,
+          // 성인 부문 — 지역/클럽
+          region: isChildSelf ? null : _selectedRegion,
+          club: isChildSelf ? null : _clubController.text.trim(),
           mobileUserId: mobileUserId,
         );
       }
@@ -448,18 +457,25 @@ class _ContestRegistrationScreenState
                   _buildPairOrganizerInfo(),
                   const SizedBox(height: 16),
                 ],
-                // 페어 랜덤조편성은 본인 신청만 (자녀 선택 없음)
-                if (!_isPairCategory) _buildTypeSelection(),
-                const SizedBox(height: 24),
+                // 신청 구분 토글: CHILD 부문일 때만 의미 있음 (페어는 본인 신청 강제)
+                // ADULT 부문엔 토글 숨기고 본인 신청만
+                if (!_isPairCategory && _isChildCategory) _buildTypeSelection(),
+                if (!_isPairCategory && _isChildCategory) const SizedBox(height: 24),
 
-                // 본인 신청: 본인 정보
-                // 자녀 신청: 보호자 연락처 + 자녀 정보
-                if (_isForChild) ...[
+                // 폼 분기 (부문 contestType 우선):
+                //  - CHILD 부문 + 자녀 대리 → 보호자 연락처 + 자녀 정보 (학교/학원/출생년도)
+                //  - CHILD 부문 + 본인 신청 → 본인 정보 + 학교/학원/출생년도
+                //  - ADULT 부문 → 본인 정보 (지역/클럽)
+                if (_isChildCategory && _isForChild) ...[
                   _buildParentContactSection(),
                   const SizedBox(height: 24),
                   _buildChildInfoSection(),
                 ] else ...[
                   _buildSelfInfoSection(),
+                  if (_isChildCategory) ...[
+                    const SizedBox(height: 24),
+                    _buildSelfChildExtraSection(),
+                  ],
                 ],
                 const SizedBox(height: 24),
 
@@ -561,11 +577,16 @@ class _ContestRegistrationScreenState
   }
 
   Widget _buildCategorySelection() {
+    // 현장 접수 전용(onsiteOnly) 부문은 앱 신청 목록에서 제외
+    // (요강 페이지에는 표시되지만 신청 자체는 차단됨)
+    final selectableCategories = widget.contest.categories
+        .where((c) => !c.onsiteOnly)
+        .toList();
     return _buildSection(
       title: '참가 부문',
       required: true,
       child: Column(
-        children: widget.contest.categories.map((category) {
+        children: selectableCategories.map((category) {
           final isSelected = _selectedCategory?.id == category.id;
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = category),
@@ -750,6 +771,54 @@ class _ContestRegistrationScreenState
   /// 선택된 부문이 페어인지
   bool get _isPairCategory =>
       _selectedCategory?.contestType?.toUpperCase() == 'PAIR';
+
+  /// 선택된 부문이 어린이부(CHILD)인지 — 폼 분기 기준
+  bool get _isChildCategory =>
+      _selectedCategory?.contestType?.toUpperCase() == 'CHILD';
+
+  /// 본인 신청 + 어린이 부문일 때 학교/학원/출생년도 추가 입력 섹션
+  /// (자녀 대리 폼의 _buildChildInfoSection과 동일 컨트롤러 재사용 — 본인이 직접 입력)
+  Widget _buildSelfChildExtraSection() {
+    return _buildSection(
+      title: '학교 / 출생년도 정보',
+      subtitle: '어린이 부문 신청 시 필요한 정보입니다',
+      child: Column(
+        children: [
+          _buildTextField(
+            controller: _childSchoolController,
+            label: '학교',
+            hint: '학교명',
+            required: true,
+            validator: (v) => v?.isEmpty ?? true ? '학교를 입력하세요' : null,
+          ),
+          const SizedBox(height: 14),
+          _buildTextField(
+            controller: _childAcademyController,
+            label: '학원/도장',
+            hint: '학원명 (선택)',
+          ),
+          const SizedBox(height: 14),
+          _buildTextField(
+            controller: _childBirthYearController,
+            focusNode: _childBirthYearFocus,
+            label: '출생년도',
+            hint: '예: 2015',
+            required: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(4),
+            ],
+            validator: (v) {
+              if (v?.isEmpty ?? true) return '출생년도를 입력하세요';
+              if (v!.length != 4) return '4자리 연도를 입력하세요';
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   String _getContestTypeLabel(String type) {
     switch (type.toUpperCase()) {
