@@ -1223,13 +1223,28 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                category.categoryName,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (category.groupName != null && category.groupName!.isNotEmpty)
+                                    Text(
+                                      category.groupName!.replaceAll(RegExp(r'\s+'), ' ').trim(),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  Text(
+                                    category.categoryName,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             // 대회 유형 태그

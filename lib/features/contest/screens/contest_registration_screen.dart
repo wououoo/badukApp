@@ -389,6 +389,116 @@ class _ContestRegistrationScreenState
     );
   }
 
+  /// 선택된 부문 안내 배너 — 부문명/참가비를 폼 상단에서 부각해 헷갈림 방지
+  Widget _buildSelectedCategoryBanner() {
+    final cat = _selectedCategory!;
+    final isPair = _isPairCategory;
+    final accent = isPair ? AppColors.warning : AppColors.success;
+    final fee = cat.fee ?? 0;
+
+    String desc;
+    if (_isPairSelfCategory) {
+      desc = '자유조편성 - 팀원 ${cat.teamSize ?? 2}명의 정보를 모두 입력해주세요.';
+    } else if (_isPairOrganizerCategory) {
+      desc = '랜덤조편성 - 본인 정보만 입력하시면 주최측이 팀을 배정합니다.';
+    } else if (_isTeamCategory) {
+      desc = '단체전 - 팀원 ${cat.teamSize ?? 3}명의 정보를 모두 입력해주세요.';
+    } else if (_isChildCategory) {
+      desc = '어린이/청소년 - 참가자와 보호자 정보를 입력해주세요.';
+    } else {
+      desc = '성인 개인전 - 참가자 정보를 입력해주세요.';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.08),
+        border: Border.all(color: accent.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(Icons.push_pin, size: 18, color: accent),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (cat.groupName != null && cat.groupName!.isNotEmpty)
+                      Text(
+                        cat.groupName!.replaceAll(RegExp(r'\s+'), ' ').trim(),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: accent.withOpacity(0.85),
+                        ),
+                      ),
+                    Text(
+                      cat.categoryName ?? '',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (fee > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '참가비 ${_formatPrice(fee)}원',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Text(
+              desc,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textPrimary,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatPrice(int price) {
+    final s = price.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -444,6 +554,12 @@ class _ContestRegistrationScreenState
               // 참가 부문 선택
               _buildCategorySelection(),
               const SizedBox(height: 24),
+
+              // 선택된 부문 안내 배너 (헷갈림 방지)
+              if (_selectedCategory != null) ...[
+                _buildSelectedCategoryBanner(),
+                const SizedBox(height: 16),
+              ],
 
               // 단체전 부문 선택 시: 모드 선택 카드 표시
               if (_isTeamCategory) ...[
@@ -623,6 +739,17 @@ class _ContestRegistrationScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (category.groupName != null && category.groupName!.isNotEmpty)
+                          Text(
+                            category.groupName!.replaceAll(RegExp(r'\s+'), ' ').trim(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? AppColors.primary.withOpacity(0.85)
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
                         Text(
                           category.categoryName,
                           style: TextStyle(

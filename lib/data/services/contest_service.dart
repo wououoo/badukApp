@@ -575,6 +575,7 @@ class ContestCategory {
   final String? feeDescription; // 참가비 설명
   final int? currentParticipants; // 현재 참가자 수
   final bool onsiteOnly;       // 현장 접수 전용 (true면 온라인 신청 차단)
+  final String? groupName;     // 그룹명 (예: "금학산부", "유소년부") - 부문 묶음 표시용
 
   ContestCategory({
     required this.id,
@@ -592,6 +593,7 @@ class ContestCategory {
     this.feeDescription,
     this.currentParticipants,
     this.onsiteOnly = false,
+    this.groupName,
   });
 
   factory ContestCategory.fromJson(Map<String, dynamic> json) {
@@ -611,6 +613,7 @@ class ContestCategory {
       feeDescription: json['feeDescription'],
       currentParticipants: json['currentParticipants'],
       onsiteOnly: json['onsiteOnly'] == true,
+      groupName: json['groupName'],
     );
   }
 

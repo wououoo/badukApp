@@ -11,6 +11,8 @@ class AppConfig {
   final bool forceUpdate;
   final String updateUrl;
   final String message;
+  /// 테스트 로그인 버튼 노출 여부 (심사용 — 백엔드 DB 토글)
+  final bool testLoginEnabled;
 
   AppConfig({
     required this.latestVersion,
@@ -19,6 +21,7 @@ class AppConfig {
     required this.forceUpdate,
     required this.updateUrl,
     required this.message,
+    this.testLoginEnabled = false,
   });
 
   factory AppConfig.fromJson(Map<String, dynamic> json) {
@@ -29,6 +32,7 @@ class AppConfig {
       forceUpdate: json['forceUpdate'] ?? false,
       updateUrl: json['updateUrl'] ?? '',
       message: json['message'] ?? '',
+      testLoginEnabled: json['testLoginEnabled'] == true,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../../data/services/version_service.dart';
 import 'apple_sign_in_helper_stub.dart'
     if (dart.library.io) 'apple_sign_in_helper.dart' as apple;
 import 'platform_helper.dart';
@@ -17,6 +18,25 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
+  // 테스트 로그인 버튼 노출 여부 — 서버 AppConfig.testLoginEnabled에 따름 (기본 숨김)
+  bool _testLoginEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppConfig();
+  }
+
+  Future<void> _loadAppConfig() async {
+    try {
+      final config = await VersionService.fetchConfig();
+      if (mounted && config != null) {
+        setState(() => _testLoginEnabled = config.testLoginEnabled);
+      }
+    } catch (_) {
+      // 실패 시 기본값(false) 유지 — 노출 안 함
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +115,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       const SizedBox(height: 24),
 
-                      // 테스트 로그인 (토스 심사용)
-                      _buildTestLoginButton(authState),
-                      const SizedBox(height: 24),
+                      // 테스트 로그인 (심사용) — 백엔드 AppConfig.testLoginEnabled가 true일 때만 노출
+                      if (_testLoginEnabled) ...[
+                        _buildTestLoginButton(authState),
+                        const SizedBox(height: 24),
+                      ],
 
                       // 이용약관 안내
                       Text(

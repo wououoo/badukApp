@@ -2,7 +2,7 @@ name: baduk_app
 description: "바둑 대회 앱 - 대회 조회, 신청, 결제, 이력 관리"
 publish_to: 'none'
 
-version: 1.1.2+51
+version: 1.1.2+52
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
