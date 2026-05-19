@@ -433,6 +433,9 @@ class ContestDetail {
   final bool? registrationOpen;
   final bool registrationAvailable;
   final String? registrationStatus; // OPEN, CLOSED, UPCOMING, ENDED
+  // 백엔드 ContestHomepage.getContestStatus() 결과 (통합 5단계):
+  // UPCOMING / OPEN / ENDED / LIVE / CLOSED — 가장 정확한 단일 진실
+  final String? contestStatus;
 
   // 문의 담당자 MobileUser ID 목록 (콤마 구분 문자열을 파싱)
   final List<int> hostMobileUserIds;
@@ -466,6 +469,7 @@ class ContestDetail {
     this.registrationOpen,
     this.registrationAvailable = true,
     this.registrationStatus,
+    this.contestStatus,
     this.hostMobileUserIds = const [],
     this.address,
     this.latitude,
@@ -478,8 +482,9 @@ class ContestDetail {
 
   bool get hasChatManager => hostMobileUserIds.isNotEmpty;
 
-  // UI 호환용 getter
-  String? get status => null;
+  // 메인 화면(Contest)과 동일한 fallback 체인 — 백엔드 contestStatus 우선
+  // (예전엔 null 반환 → ContestStatusBadge가 default로 빠져서 모든 대회 상세가 "접수중"으로 표시되는 버그가 있었음)
+  String? get status => contestStatus ?? registrationStatus;
   String get dateText => schedule ?? '';
   String get fullLocation => venue ?? '';
   int get totalParticipants => registrationCount ?? 0;
@@ -522,6 +527,7 @@ class ContestDetail {
       registrationOpen: json['registrationOpen'],
       registrationAvailable: json['registrationAvailable'] ?? true,
       registrationStatus: json['registrationStatus'],
+      contestStatus: json['contestStatus'],
       hostMobileUserIds: _parseIdList(json['hostMobileUserId']),
       address: json['address'],
       latitude: (json['latitude'] as num?)?.toDouble(),

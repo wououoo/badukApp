@@ -81,6 +81,8 @@ class HomepageDetail {
   final bool? paymentFeeRefundOnCancel;
   /// 운영자가 직접 입력한 환불 안내 문구 (있으면 자동 생성 안내 대체)
   final String? refundNoticeOverride;
+  /// 대회 시작일 — 환불 정책 D-Day 계산의 기준
+  final DateTime? contestStartDate;
 
   HomepageDetail({
     required this.homepageId,
@@ -107,6 +109,7 @@ class HomepageDetail {
     this.sameDayFreeRefund,
     this.paymentFeeRefundOnCancel,
     this.refundNoticeOverride,
+    this.contestStartDate,
   });
 
   factory HomepageDetail.fromJson(Map<String, dynamic> json) {
@@ -140,6 +143,9 @@ class HomepageDetail {
       sameDayFreeRefund: homepage['sameDayFreeRefund'] as bool?,
       paymentFeeRefundOnCancel: homepage['paymentFeeRefundOnCancel'] as bool?,
       refundNoticeOverride: homepage['refundNoticeOverride'] as String?,
+      contestStartDate: homepage['contestStartDate'] != null
+          ? DateTime.tryParse(homepage['contestStartDate'].toString())
+          : null,
     );
   }
 

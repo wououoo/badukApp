@@ -147,4 +147,4 @@ class ApiConstants {
   static const String privacyConsentWithdraw = '/mobile/privacy/consent/withdraw';
   static const String privacyPolicy = '/mobile/privacy/policy';
 }
-// [마지막 릴리즈] 1.1.2+52 (2026-05-18 22:27)
+// [마지막 릴리즈] 1.1.2+53 (2026-05-19 20:56)

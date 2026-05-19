@@ -112,7 +112,7 @@ class PaymentInfoBox extends ConsumerWidget {
                   ),
                   Text(
                     isUserPaysRefundFee && refundFeeFixed > 0
-                        ? '환불율 100% (수수료 ${_fmt(refundFeeFixed)}원 차감)'
+                        ? '${_fmt((totalAmount - refundFeeFixed).clamp(0, 1 << 31))}원 환불 (수수료 ${_fmt(refundFeeFixed)}원 차감)'
                         : '전액 환불 ${_fmt(totalAmount)}원',
                     style: const TextStyle(fontSize: 13, color: Color(0xFF047857), fontWeight: FontWeight.w700),
                   ),
@@ -263,7 +263,7 @@ class PaymentInfoBox extends ConsumerWidget {
               ],
             ),
           ),
-          // 행
+          // 행 — 각 행에 실제 날짜 범위 함께 표시
           ...sorted.asMap().entries.map((entry) {
             final i = entry.key;
             final p = entry.value;
@@ -274,6 +274,9 @@ class PaymentInfoBox extends ConsumerWidget {
                 : p.refundRate > 0
                     ? const Color(0xFFD97706)
                     : const Color(0xFFDC2626);
+            // 이전 정책의 daysBeforeContest (날짜 범위 계산용)
+            final prevDays = i == 0 ? null : sorted[i - 1].daysBeforeContest;
+            final dateRange = _formatDateRange(homepage.contestStartDate, prevDays, p.daysBeforeContest);
 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -283,12 +286,29 @@ class PaymentInfoBox extends ConsumerWidget {
                     : const Border(bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1)),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     flex: 3,
-                    child: Text(
-                      p.description ?? '대회 ${p.daysBeforeContest}일 전까지',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF444444)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.description ?? '대회 ${p.daysBeforeContest}일 전까지',
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF444444)),
+                        ),
+                        if (dateRange.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            dateRange,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: rateColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Expanded(
@@ -544,5 +564,29 @@ class PaymentInfoBox extends ConsumerWidget {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (m) => '${m[1]},',
         );
+  }
+
+  /// 정책 적용 날짜 범위 계산 (백엔드 로직과 동일)
+  ///  - prevDays == null: 첫 정책(가장 큰 daysBeforeContest) → "~ 6/20(목)까지"
+  ///  - prevDays != null: 중간/마지막 정책 → "6/21(금) ~ 6/24(월)"
+  ///  - contestDate == null: 빈 문자열 (날짜 표시 안 함)
+  String _formatDateRange(DateTime? contestDate, int? prevDays, int thisDays) {
+    if (contestDate == null) return '';
+    // 시간 부분 제거 (KST 안전)
+    final base = DateTime(contestDate.year, contestDate.month, contestDate.day);
+
+    if (prevDays == null) {
+      final end = base.subtract(Duration(days: thisDays));
+      return '~ ${_formatDate(end)}까지';
+    }
+    final start = base.subtract(Duration(days: prevDays - 1));
+    final end = base.subtract(Duration(days: thisDays));
+    if (start.isAtSameMomentAs(end)) return _formatDate(start);
+    return '${_formatDate(start)} ~ ${_formatDate(end)}';
+  }
+
+  String _formatDate(DateTime d) {
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    return '${d.month}/${d.day}(${weekdays[d.weekday - 1]})';
   }
 }

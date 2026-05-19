@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/payment.dart';
 import '../../../data/providers/payment_provider.dart';
+import '../../../data/providers/homepage_provider.dart';
 
 /// 환불 규정 표시 위젯 (3곳에서 재사용)
 /// - 대회 상세 화면 (정보 탭)
@@ -23,18 +24,33 @@ class RefundPolicySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final policiesAsync = ref.watch(refundPoliciesProvider(homepageId));
+    // 환불 수수료 안내용으로 homepage detail도 watch (캐시되어 추가 호출 없음)
+    final homepageAsync = ref.watch(homepageDetailProvider(homepageId));
 
     return policiesAsync.when(
       data: (policies) {
         if (policies.isEmpty) return const SizedBox.shrink();
-        return _buildContent(context, policies);
+        // homepage 정보가 로드되었으면 환불 수수료 + 대회 시작일 추출, 아니면 기본값
+        final isUserPaysRefundFee = homepageAsync.maybeWhen(
+          data: (hp) => hp.isUserPaysRefundFee,
+          orElse: () => true,
+        );
+        final refundFeeFixed = homepageAsync.maybeWhen(
+          data: (hp) => hp.refundFeeFixedOrDefault,
+          orElse: () => 400,
+        );
+        final contestStartDate = homepageAsync.maybeWhen(
+          data: (hp) => hp.contestStartDate,
+          orElse: () => null,
+        );
+        return _buildContent(context, policies, isUserPaysRefundFee, refundFeeFixed, contestStartDate);
       },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
 
-  Widget _buildContent(BuildContext context, List<RefundPolicy> policies) {
+  Widget _buildContent(BuildContext context, List<RefundPolicy> policies, bool isUserPaysRefundFee, int refundFeeFixed, DateTime? contestStartDate) {
     // daysBeforeContest 내림차순 정렬 (먼 날짜부터)
     final sorted = List<RefundPolicy>.from(policies)
       ..sort((a, b) => b.daysBeforeContest.compareTo(a.daysBeforeContest));
@@ -106,17 +122,55 @@ class RefundPolicySection extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // 정책 테이블
+                // 정책 테이블 — 각 행에 실제 날짜 범위 함께 표시
                 ...sorted.asMap().entries.map((entry) {
                   final i = entry.key;
                   final policy = entry.value;
                   final isLast = i == sorted.length - 1;
-                  return _buildPolicyRow(policy, isLast);
+                  // 이전 정책의 daysBeforeContest (날짜 범위 계산용)
+                  final prevDays = i == 0 ? null : sorted[i - 1].daysBeforeContest;
+                  final dateRange = _formatDateRange(contestStartDate, prevDays, policy.daysBeforeContest);
+                  return _buildPolicyRow(policy, isLast, dateRange);
                 }),
 
-                // 대회 당일 환불 불가 안내
-                const SizedBox(height: 8),
-                _buildNonRefundableRow(),
+                // 환불 수수료 안내 (사용자 부담 + 정액 > 0일 때)
+                if (isUserPaysRefundFee && refundFeeFixed > 0) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 14, color: AppColors.warning),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textPrimary,
+                                height: 1.4,
+                              ),
+                              children: [
+                                const TextSpan(text: '환불 시 토스 가상계좌 환불 수수료 '),
+                                TextSpan(
+                                  text: '${refundFeeFixed}원',
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                const TextSpan(text: '이 추가 차감됩니다. 결제 당일 취소도 동일.'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // compact 모드가 아닐 때 추가 안내
                 if (!compact) ...[
@@ -159,7 +213,7 @@ class RefundPolicySection extends ConsumerWidget {
     );
   }
 
-  Widget _buildPolicyRow(RefundPolicy policy, bool isLast) {
+  Widget _buildPolicyRow(RefundPolicy policy, bool isLast, String dateRange) {
     final rateColor = policy.refundRate >= 100
         ? AppColors.statusOpen
         : policy.refundRate >= 50
@@ -169,9 +223,11 @@ class RefundPolicySection extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 타임라인 아이콘
           Container(
+            margin: const EdgeInsets.only(top: 2),
             width: 28,
             height: 28,
             decoration: BoxDecoration(
@@ -190,19 +246,36 @@ class RefundPolicySection extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // 설명
+          // 설명 + 날짜 범위
           Expanded(
-            child: Text(
-              policy.description ??
-                  '대회 ${policy.daysBeforeContest}일 전까지',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textPrimary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  policy.description ??
+                      '대회 ${policy.daysBeforeContest}일 전까지',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (dateRange.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    dateRange,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: rateColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           // 환불율
           Container(
+            margin: const EdgeInsets.only(top: 2),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: rateColor.withOpacity(0.1),
@@ -222,50 +295,30 @@ class RefundPolicySection extends ConsumerWidget {
     );
   }
 
-  Widget _buildNonRefundableRow() {
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: AppColors.error.withOpacity(0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Icon(
-              Icons.close_rounded,
-              size: 14,
-              color: AppColors.error,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            '대회 당일 이후',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.error.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '환불 불가',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.error,
-            ),
-          ),
-        ),
-      ],
-    );
+  /// 정책 적용 날짜 범위 계산
+  /// - prevDays == null: 첫 정책(가장 큰 daysBeforeContest) → "~ 6/20(목)까지"
+  /// - prevDays != null: 중간/마지막 정책 → "6/21(금) ~ 6/24(월)"
+  /// - contestDate == null: 빈 문자열 반환 (날짜 표시 안 함)
+  String _formatDateRange(DateTime? contestDate, int? prevDays, int thisDays) {
+    if (contestDate == null) return '';
+    // 시간 부분 제거 (백엔드와 동일하게 날짜만 비교)
+    final base = DateTime(contestDate.year, contestDate.month, contestDate.day);
+
+    if (prevDays == null) {
+      // 가장 위 정책 — "~ (contestDate - thisDays)까지"
+      final end = base.subtract(Duration(days: thisDays));
+      return '~ ${_formatDate(end)}까지';
+    }
+    // 중간/마지막 정책 — start ~ end
+    final start = base.subtract(Duration(days: prevDays - 1));
+    final end = base.subtract(Duration(days: thisDays));
+    if (start.isAtSameMomentAs(end)) return _formatDate(start);
+    return '${_formatDate(start)} ~ ${_formatDate(end)}';
   }
+
+  String _formatDate(DateTime d) {
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    return '${d.month}/${d.day}(${weekdays[d.weekday - 1]})';
+  }
+
 }
