@@ -9,6 +9,7 @@ import '../../../core/widgets/icon_grid_menu.dart';
 import '../../../core/widgets/horizontal_tab_menu.dart';
 import '../../../data/models/contest.dart';
 import '../../../data/models/qr/my_contest.dart';
+import '../../../data/models/qr/match_preview.dart';
 import '../../../data/providers/contest_provider.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/mobile_qr_provider.dart';
@@ -1698,7 +1699,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         // 대회 목록 (가로 스크롤)
         SizedBox(
-          height: 140,
+          height: 210,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2087,16 +2088,129 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            // 하단: 가장 활성화된 부문의 경기 정보
+            // 하단: 가장 활성화된 부문의 경기 정보 + footer (진행률·인접 매치)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                child: _buildMatchInfo(active, showSortName: group.length > 1),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _buildMatchInfo(active, showSortName: group.length > 1),
+                    ),
+                    _buildMatchFooter(active),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// 매치 footer: 진행률 + 인접 매치 미리보기
+  /// - 진행률·인접 매치 데이터가 없거나 표시 부적합 상태면 빈 위젯 반환
+  Widget _buildMatchFooter(MyContest contest) {
+    // 체크인 단계(currentRound == 0) 또는 DE 예선 탈락은 표시 안 함
+    final isPreContest = contest.currentRound == 0;
+    final isDeEliminated = contest.tournamentStarted == true &&
+        contest.advancedToTournament == false;
+    if (isPreContest || isDeEliminated) {
+      return const SizedBox.shrink();
+    }
+
+    final hasProgress = contest.hasProgressInfo;
+    final hasAdjacent = contest.hasAdjacentMatches;
+    if (!hasProgress && !hasAdjacent) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasProgress)
+            Row(
+              children: [
+                Icon(Icons.bar_chart, size: 12, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text(
+                  'R${contest.currentRound} 진행 ${contest.completedMatchesInCurrentRound ?? 0}/${contest.totalMatchesInCurrentRound}경기',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          if (hasAdjacent) ...[
+            const SizedBox(height: 3),
+            ...contest.adjacentMatches.take(2).map((m) => Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: _buildAdjacentMatchRow(m),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 인접 매치 한 줄 표시
+  Widget _buildAdjacentMatchRow(MatchPreview m) {
+    final isCompleted = m.isCompleted;
+    final isBye = m.isBye;
+    String text;
+    if (isBye) {
+      text = '${m.matchNumber ?? '-'}번  ${m.player1Name ?? ''} (부전승)';
+    } else {
+      text = '${m.matchNumber ?? '-'}번  ${m.player1Name ?? ''} vs ${m.player2Name ?? ''}';
+    }
+    String statusLabel;
+    Color statusColor;
+    if (isCompleted) {
+      statusLabel = '완료';
+      statusColor = AppColors.success;
+    } else if (m.status == 'SCHEDULED') {
+      statusLabel = '대기';
+      statusColor = AppColors.textTertiary;
+    } else {
+      statusLabel = '진행중';
+      statusColor = AppColors.warning;
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 10.5,
+              color: AppColors.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          statusLabel,
+          style: TextStyle(
+            fontSize: 10,
+            color: statusColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

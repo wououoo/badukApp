@@ -533,7 +533,7 @@ class TournamentBracketMatch {
   MatchResult toMatchResult() {
     return MatchResult(
       player1: player1Name ?? '대기',
-      player2: player2Name,
+      player2: player2Name ?? '대기',
       player1Id: player1Id ?? 0,
       player2Id: player2Id,
       winnerId: winnerId,

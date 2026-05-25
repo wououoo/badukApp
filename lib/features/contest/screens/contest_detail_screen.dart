@@ -486,33 +486,54 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverTabBarDelegate(
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-          tabs: const [
-            Tab(text: '정보'),
-            Tab(text: '부문'),
-            Tab(text: '상금'),
-            Tab(text: '지도'),
-            Tab(text: '대진표'),
-            Tab(text: '결과'),
-            Tab(text: '사진'),
-          ],
-        ),
+        height: 92,
+        child: _buildWrapTabs(),
       ),
+    );
+  }
+
+  /// 탭을 2줄로 자동 줄바꿈하는 칩 형태 (글자 작게 하지 않고 잘림 방지)
+  Widget _buildWrapTabs() {
+    const labels = ['정보', '부문', '상금', '지도', '대진표', '결과', '사진'];
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        return Container(
+          width: double.infinity,
+          color: AppColors.surface,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(labels.length, (i) {
+              final selected = _tabController.index == i;
+              return GestureDetector(
+                onTap: () => _tabController.animateTo(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: selected ? AppColors.primary : AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selected ? AppColors.primary : AppColors.border,
+                    ),
+                  ),
+                  child: Text(
+                    labels[i],
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? Colors.white : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 
@@ -1269,17 +1290,35 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
                               ),
                           ],
                         ),
+                        // 참가 자격 — 멀티라인 긴 텍스트라 풀폭으로 표시 (칩에 넣으면 오버플로우)
+                        if (category.skillRequirement != null &&
+                            category.skillRequirement!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.grade_outlined,
+                                  size: 14, color: AppColors.textTertiary),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  category.skillRequirement!,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 6),
-                        // 세부 정보
+                        // 세부 정보 (시간/잔여석 등 짧은 칩만)
                         Wrap(
                           spacing: 12,
                           runSpacing: 4,
                           children: [
-                            if (category.skillRequirement != null)
-                              _buildCategoryChip(
-                                Icons.grade_outlined,
-                                category.skillRequirement!,
-                              ),
                             if (category.gameTime != null)
                               _buildCategoryChip(
                                 Icons.timer_outlined,
@@ -2424,30 +2463,32 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
   }
 }
 
-/// 탭바 Delegate
+/// 탭바 Delegate (커스텀 Wrap 칩 탭 지원)
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
+  final Widget child;
+  final double height;
 
-  _SliverTabBarDelegate(this.tabBar);
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
+  _SliverTabBarDelegate({required this.child, required this.height});
 
   @override
-  double get maxExtent => tabBar.preferredSize.height;
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: AppColors.surface,
-      child: tabBar,
+      height: height,
+      child: child,
     );
   }
 
   @override
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return false;
+    return oldDelegate.height != height || oldDelegate.child != child;
   }
 }
 

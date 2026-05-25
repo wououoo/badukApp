@@ -1282,7 +1282,12 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
 
           // 대진표 내용
           Expanded(
-            child: _buildRoundMatches(sortId, deGroup: participation?.deGroup, contestType: effectiveType),
+            child: _buildRoundMatches(
+              sortId,
+              deGroup: participation?.deGroup,
+              contestType: effectiveType,
+              myParticipantId: participation?.participantId,
+            ),
           ),
         ],
       ],
@@ -2162,7 +2167,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
     );
   }
 
-  Widget _buildRoundMatches(int sortId, {int? deGroup, String? contestType}) {
+  Widget _buildRoundMatches(int sortId, {int? deGroup, String? contestType, int? myParticipantId}) {
     final params = QRRoundResultParams(
       contestId: widget.contestId,
       round: _selectedRound,
@@ -2170,6 +2175,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
       contestType: contestType,
     );
     final asyncValue = ref.watch(qrRoundResultsProvider(params));
+    final bool isDE = contestType == 'DE';
 
     return asyncValue.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -2186,67 +2192,153 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
           );
         }
 
-        // DE일 때 자기 조의 매치만 필터링
-        final matches = deGroup != null
-            ? result.matches.where((m) => m.group == deGroup).toList()
-            : result.matches;
+        // DE는 모든 그룹 표시 + 그룹별 헤더 + 본인 매치 강조
+        if (isDE) {
+          // 그룹별로 그룹핑 (그룹 번호 오름차순)
+          final Map<int, List<MatchResult>> byGroup = {};
+          for (final m in result.matches) {
+            final g = m.group ?? 0;
+            byGroup.putIfAbsent(g, () => []).add(m);
+          }
+          final sortedGroups = byGroup.keys.toList()..sort();
 
-        if (matches.isEmpty) {
-          return Center(
-            child: Text(
-              '$_selectedRound라운드 대진표가 없습니다',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: sortedGroups.length,
+            itemBuilder: (context, index) {
+              final g = sortedGroups[index];
+              final groupMatches = byGroup[g]!;
+              final bool isMyGroup = deGroup != null && deGroup == g;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 그룹 헤더
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8, left: 4),
+                      child: Row(
+                        children: [
+                          Text(
+                            g > 0 ? '$g조' : '기타',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isMyGroup ? const Color(0xFFFD7E14) : AppColors.textPrimary,
+                            ),
+                          ),
+                          if (isMyGroup) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFD7E14),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                '내 조',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // 매치 카드들
+                    ...groupMatches.map((m) {
+                      final bool isMyMatch = myParticipantId != null &&
+                          (m.player1Id == myParticipantId ||
+                              (m.player2Id != null && m.player2Id == myParticipantId));
+                      return _buildMatchCard(m, isMyMatch: isMyMatch);
+                    }),
+                  ],
+                ),
+              );
+            },
           );
         }
 
+        // DE 외: 기존대로 전체 표시
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: matches.length,
+          itemCount: result.matches.length,
           itemBuilder: (context, index) {
-            final match = matches[index];
-            return _buildMatchCard(match);
+            final match = result.matches[index];
+            final bool isMyMatch = myParticipantId != null &&
+                (match.player1Id == myParticipantId ||
+                    (match.player2Id != null && match.player2Id == myParticipantId));
+            return _buildMatchCard(match, isMyMatch: isMyMatch);
           },
         );
       },
     );
   }
 
-  Widget _buildMatchCard(MatchResult match) {
+  Widget _buildMatchCard(MatchResult match, {bool isMyMatch = false}) {
     // 양패: 둘 다 패배 처리. 부전승보다 우선 판정 (isNone과 isByeMatch가 동시에 true이면 양패로 표시)
     final bool isNoneMatch = match.isNone;
     final bool isPlayer1Winner = !isNoneMatch && match.isCompleted && match.winnerId != null && match.winnerId == match.player1Id;
     final bool isPlayer2Winner = !isNoneMatch && match.isCompleted && match.winnerId != null && match.player2Id != null && match.winnerId == match.player2Id;
     final bool hasBoards = match.boards.isNotEmpty;
 
+    // 본인 매치 강조 색상
+    const Color myColor = Color(0xFFFD7E14);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
+      elevation: isMyMatch ? 2 : 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isNoneMatch
-              ? AppColors.error.withOpacity(0.3)
-              : (match.isCompleted ? AppColors.border : AppColors.info.withOpacity(0.3)),
+          width: isMyMatch ? 2 : 1,
+          color: isMyMatch
+              ? myColor
+              : (isNoneMatch
+                  ? AppColors.error.withOpacity(0.3)
+                  : (match.isCompleted ? AppColors.border : AppColors.info.withOpacity(0.3))),
         ),
       ),
-      color: AppColors.surface,
+      color: isMyMatch ? myColor.withOpacity(0.06) : AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: isNoneMatch
-            ? _buildNoneMatchContent(match)
-            : match.isByeMatch
-                ? _buildByeMatchContent(match)
-                : Column(
-                    children: [
-                      _buildNormalMatchContent(match, isPlayer1Winner, isPlayer2Winner),
-                      // 단체전 기별 대진 표시
-                      if (hasBoards) ...[
-                        const Divider(height: 16),
-                        _buildBoardMatchesContent(match),
-                      ],
-                    ],
-                  ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (isMyMatch)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: myColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        '👉 내 경기',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            isNoneMatch
+                ? _buildNoneMatchContent(match)
+                : match.isByeMatch
+                    ? _buildByeMatchContent(match)
+                    : Column(
+                        children: [
+                          _buildNormalMatchContent(match, isPlayer1Winner, isPlayer2Winner),
+                          // 단체전 기별 대진 표시
+                          if (hasBoards) ...[
+                            const Divider(height: 16),
+                            _buildBoardMatchesContent(match),
+                          ],
+                        ],
+                      ),
+          ],
+        ),
       ),
     );
   }

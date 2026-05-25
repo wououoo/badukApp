@@ -25,9 +25,18 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    // 화면 진입 시 알림 목록 로드
-    Future.microtask(() {
-      ref.read(notificationListProvider.notifier).loadNotifications();
+    // 화면 진입 시 알림 목록 로드 + 자동 전체 읽음 처리
+    Future.microtask(() async {
+      final notifier = ref.read(notificationListProvider.notifier);
+      await notifier.loadNotifications();
+      if (!mounted) return;
+      // 안읽은 알림이 있으면 진입 즉시 전체 읽음 처리 (뱃지 제거)
+      final st = ref.read(notificationListProvider);
+      if (st.notifications.any((n) => !n.isRead)) {
+        await notifier.markAllAsRead();
+        if (!mounted) return;
+        ref.invalidate(unreadCountProvider);
+      }
     });
   }
 

@@ -22,8 +22,17 @@ class _ReceivedNotificationsScreenState
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.read(notificationListProvider.notifier).loadNotifications();
+    Future.microtask(() async {
+      final notifier = ref.read(notificationListProvider.notifier);
+      await notifier.loadNotifications();
+      if (!mounted) return;
+      // 진입 즉시 전체 읽음 처리 (뱃지 제거)
+      final st = ref.read(notificationListProvider);
+      if (st.notifications.any((n) => !n.isRead)) {
+        await notifier.markAllAsRead();
+        if (!mounted) return;
+        ref.invalidate(unreadCountProvider);
+      }
     });
     _scrollController.addListener(_onScroll);
   }

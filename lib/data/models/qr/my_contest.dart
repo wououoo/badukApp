@@ -1,3 +1,5 @@
+import 'match_preview.dart';
+
 /// 내 참가 대회 DTO (MyContestDTO)
 class MyContest {
   final int contestId;
@@ -42,6 +44,11 @@ class MyContest {
   final bool needsSelection;
   final List<CandidateInfo> candidates;
 
+  // 라운드 진행 통계 (홈 화면 카드 부가 표시)
+  final int? totalMatchesInCurrentRound;     // 현재 라운드 전체 매치 수
+  final int? completedMatchesInCurrentRound; // 완료된 매치 수
+  final List<MatchPreview> adjacentMatches;  // 인접 테이블 미리보기
+
   MyContest({
     required this.contestId,
     required this.contestName,
@@ -72,6 +79,9 @@ class MyContest {
     this.tournamentOpponent,
     this.needsSelection = false,
     this.candidates = const [],
+    this.totalMatchesInCurrentRound,
+    this.completedMatchesInCurrentRound,
+    this.adjacentMatches = const [],
   });
 
   factory MyContest.fromJson(Map<String, dynamic> json) {
@@ -113,8 +123,20 @@ class MyContest {
       candidates: (json['candidates'] as List<dynamic>?)
           ?.map((c) => CandidateInfo.fromJson(c))
           .toList() ?? [],
+      totalMatchesInCurrentRound: json['totalMatchesInCurrentRound'],
+      completedMatchesInCurrentRound: json['completedMatchesInCurrentRound'],
+      adjacentMatches: (json['adjacentMatches'] as List<dynamic>?)
+          ?.map((m) => MatchPreview.fromJson(m as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
+
+  /// 진행률 표시 가능 여부
+  bool get hasProgressInfo =>
+      totalMatchesInCurrentRound != null && totalMatchesInCurrentRound! > 0;
+
+  /// 인접 매치 표시 가능 여부
+  bool get hasAdjacentMatches => adjacentMatches.isNotEmpty;
 
   /// 대회 타입 표시명
   String get contestTypeLabel {
