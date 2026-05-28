@@ -574,6 +574,7 @@ class ContestCategory {
   final String? gameTime;
   final String? note;
   final String? contestType;
+  final String? birthInputType; // "NONE" / "YEAR_ONLY" / "FULL_DATE", null이면 contestType에 따른 기본값(CHILD=YEAR_ONLY, 그 외=NONE)
   final int? teamSize;
   final String? teamFormationType; // SELF(자유조편성), ORGANIZER(랜덤조편성) - PAIR에서 사용
   final int? displayOrder;
@@ -592,6 +593,7 @@ class ContestCategory {
     this.gameTime,
     this.note,
     this.contestType,
+    this.birthInputType,
     this.teamSize,
     this.teamFormationType,
     this.displayOrder,
@@ -612,6 +614,7 @@ class ContestCategory {
       gameTime: json['gameTime'],
       note: json['note'],
       contestType: json['contestType'],
+      birthInputType: json['birthInputType'],
       teamSize: json['teamSize'],
       teamFormationType: json['teamFormationType'],
       displayOrder: json['displayOrder'],

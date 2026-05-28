@@ -207,6 +207,10 @@ class _ContestRegistrationScreenState
         // (어린이 부문에 본인이 직접 신청하면 type='CHILD'로 저장 → 데이터 일관성)
         final selfRegType = (_selectedCategory?.contestType?.toUpperCase() ?? 'ADULT');
         final isChildSelf = selfRegType == 'CHILD';
+        // 부문 birthInputType 결정 (CHILD 기본 YEAR_ONLY, 그 외 NONE)
+        final birthInputType = _selectedCategory?.birthInputType ??
+            (isChildSelf ? 'YEAR_ONLY' : 'NONE');
+        final sendBirth = birthInputType != 'NONE';
         registration = RegistrationData(
           homepageId: widget.homepageId,
           categoryId: _selectedCategory!.id,
@@ -218,7 +222,8 @@ class _ContestRegistrationScreenState
           // 어린이 부문 본인 신청 — 학교/학원/출생년도 + 본인 연락처를 보호자 연락처로도 사용
           school: isChildSelf ? _childSchoolController.text.trim() : null,
           academy: isChildSelf ? _childAcademyController.text.trim() : null,
-          birthYear: isChildSelf ? _childBirthYearController.text.trim() : null,
+          // 부문에 출생 정보 설정이 있으면 전송 (YEAR_ONLY="YYYY" / FULL_DATE="YYYY-MM-DD")
+          birthYear: sendBirth ? _childBirthYearController.text.trim() : null,
           parentPhone: isChildSelf ? _phoneController.text.trim() : null,
           // 성인 부문 — 지역/클럽
           region: isChildSelf ? null : _selectedRegion,
@@ -591,6 +596,9 @@ class _ContestRegistrationScreenState
                   if (_isChildCategory) ...[
                     const SizedBox(height: 24),
                     _buildSelfChildExtraSection(),
+                  ] else ...[
+                    // 성인/페어/단체 부문 — 부문에 birthInputType 설정이 있으면 출생 정보 입력 (기본 NONE = 안 받음)
+                    _buildAdultBirthSection(),
                   ],
                 ],
                 const SizedBox(height: 24),
@@ -924,25 +932,185 @@ class _ContestRegistrationScreenState
             label: '학원/도장',
             hint: '학원명 (선택)',
           ),
-          const SizedBox(height: 14),
-          _buildTextField(
-            controller: _childBirthYearController,
-            focusNode: _childBirthYearFocus,
-            label: '출생년도',
-            hint: '예: 2015',
-            required: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(4),
-            ],
-            validator: (v) {
-              if (v?.isEmpty ?? true) return '출생년도를 입력하세요';
-              if (v!.length != 4) return '4자리 연도를 입력하세요';
-              return null;
-            },
-          ),
+          _buildBirthInputField(defaultType: 'YEAR_ONLY'),
         ],
+      ),
+    );
+  }
+
+  /// 출생 정보 입력 위젯 — 부문 birthInputType 따라 분기
+  /// defaultType: 명시값 없을 때 기본 (어린이=YEAR_ONLY, 성인/페어/단체=NONE)
+  Widget _buildBirthInputField({required String defaultType}) {
+    final type = _selectedCategory?.birthInputType ?? defaultType;
+    if (type == 'NONE') return const SizedBox.shrink();
+    if (type == 'FULL_DATE') {
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: _buildBirthDatePicker(),
+      );
+    }
+    // YEAR_ONLY (기존 동작)
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: _buildTextField(
+        controller: _childBirthYearController,
+        focusNode: _childBirthYearFocus,
+        label: '출생년도',
+        hint: '예: 2015',
+        required: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(4),
+        ],
+        validator: (v) {
+          if (v?.isEmpty ?? true) return '출생년도를 입력하세요';
+          if (v!.length != 4) return '4자리 연도를 입력하세요';
+          return null;
+        },
+      ),
+    );
+  }
+
+  /// 생년월일 년/월/일 dropdown 3개 (FULL_DATE 전용 — 6자리 year, 잘못된 일 원천 차단)
+  Widget _buildBirthDatePicker() {
+    final raw = _childBirthYearController.text;
+    final parts = raw.split('-');
+    final y = parts.isNotEmpty ? parts[0] : '';
+    final m = parts.length > 1 && parts[1].isNotEmpty
+        ? int.parse(parts[1]).toString()
+        : '';
+    final d = parts.length > 2 && parts[2].isNotEmpty
+        ? int.parse(parts[2]).toString()
+        : '';
+
+    int daysInMonth(String year, String month) {
+      if (year.isEmpty || month.isEmpty) return 31;
+      final yy = int.tryParse(year) ?? 0;
+      final mm = int.tryParse(month) ?? 0;
+      if (yy == 0 || mm == 0) return 31;
+      return DateTime(yy, mm + 1, 0).day;
+    }
+
+    void update(String ny, String nm, String nd) {
+      String fd = nd;
+      if (ny.isNotEmpty && nm.isNotEmpty && nd.isNotEmpty) {
+        final max = daysInMonth(ny, nm);
+        if (int.parse(nd) > max) fd = max.toString();
+      }
+      String v;
+      if (ny.isNotEmpty && nm.isNotEmpty && fd.isNotEmpty) {
+        v = '${ny.padLeft(4, '0')}-${nm.padLeft(2, '0')}-${fd.padLeft(2, '0')}';
+      } else if (ny.isNotEmpty || nm.isNotEmpty || fd.isNotEmpty) {
+        v = '$ny-$nm-$fd';
+      } else {
+        v = '';
+      }
+      setState(() {
+        _childBirthYearController.text = v;
+      });
+    }
+
+    final currentYear = DateTime.now().year;
+    final maxDay = daysInMonth(y, m);
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 4,
+          child: DropdownButtonFormField<String>(
+            value: y.isEmpty ? null : y,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '생년월일 *',
+              hintText: '년도',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: List.generate(100, (i) {
+              final yr = (currentYear - i).toString();
+              return DropdownMenuItem(value: yr, child: Text('$yr년'));
+            }),
+            onChanged: (v) => update(v ?? '', m, d),
+            validator: (v) => (v == null || v.isEmpty) ? '필수' : null,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          flex: 3,
+          child: DropdownButtonFormField<String>(
+            value: m.isEmpty ? null : m,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '월',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: List.generate(12, (i) {
+              return DropdownMenuItem(
+                value: (i + 1).toString(),
+                child: Text('${i + 1}월'),
+              );
+            }),
+            onChanged: (v) => update(y, v ?? '', d),
+            validator: (v) => (v == null || v.isEmpty) ? '필수' : null,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          flex: 3,
+          child: DropdownButtonFormField<String>(
+            value: d.isEmpty ? null : d,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '일',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: List.generate(maxDay, (i) {
+              return DropdownMenuItem(
+                value: (i + 1).toString(),
+                child: Text('${i + 1}일'),
+              );
+            }),
+            onChanged: (v) => update(y, m, v ?? ''),
+            validator: (v) => (v == null || v.isEmpty) ? '필수' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 성인/페어/단체 본인 신청 — 부문 birthInputType 설정 시 별도 섹션 노출
+  /// (CHILD 본인 신청은 _buildSelfChildExtraSection이 이미 처리)
+  Widget _buildAdultBirthSection() {
+    final type = _selectedCategory?.birthInputType ?? 'NONE';
+    if (type == 'NONE') return const SizedBox.shrink();
+    final isFullDate = type == 'FULL_DATE';
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: _buildSection(
+        title: isFullDate ? '생년월일' : '출생년도',
+        subtitle: '대회 참가 자격 확인용',
+        child: isFullDate
+            ? _buildBirthDatePicker()
+            : _buildTextField(
+                controller: _childBirthYearController,
+                focusNode: _childBirthYearFocus,
+                label: '출생년도',
+                hint: '예: 1990',
+                required: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                validator: (v) {
+                  if (v?.isEmpty ?? true) return '출생년도를 입력하세요';
+                  if (v!.length != 4) return '4자리 연도를 입력하세요';
+                  return null;
+                },
+              ),
       ),
     );
   }
@@ -1133,24 +1301,7 @@ class _ContestRegistrationScreenState
             items: _skillLevels,
             onChanged: (v) => setState(() => _childSkillLevel = v),
           ),
-          const SizedBox(height: 14),
-          _buildTextField(
-            controller: _childBirthYearController,
-            focusNode: _childBirthYearFocus,
-            label: '출생년도',
-            hint: '예: 2015',
-            required: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(4),
-            ],
-            validator: (v) {
-              if (v?.isEmpty ?? true) return '출생년도를 입력하세요';
-              if (v!.length != 4) return '4자리 연도를 입력하세요';
-              return null;
-            },
-          ),
+          _buildBirthInputField(defaultType: 'YEAR_ONLY'),
           const SizedBox(height: 14),
           _buildTextField(
             controller: _childSchoolController,
