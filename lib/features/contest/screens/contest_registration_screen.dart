@@ -1021,6 +1021,9 @@ class _ContestRegistrationScreenState
           child: DropdownButtonFormField<String>(
             value: y.isEmpty ? null : y,
             isExpanded: true,
+            // 검증 실패 시 스크롤/포커스 타겟 (YEAR_ONLY 텍스트필드와 동일 노드 —
+            // 두 모드는 동시에 렌더되지 않으므로 충돌 없음)
+            focusNode: _childBirthYearFocus,
             decoration: const InputDecoration(
               labelText: '생년월일 *',
               hintText: '년도',
@@ -1807,6 +1810,22 @@ class _ContestRegistrationScreenState
     );
   }
 
+  /// 생년월일 필드가 표시되는 부문(birthInputType != NONE)에서 값이 비었거나
+  /// 형식이 틀리면 해당 포커스 노드를, 아니면 null을 반환.
+  /// 표시 형식: 자녀 부문 기본 YEAR_ONLY("YYYY", 4자리), 그 외 기본 NONE, FULL_DATE("YYYY-MM-DD").
+  /// 웹과 동일하게 "표시되는 경우 필수" 정책. (검증 자체는 각 필드 validator가 수행하고,
+  ///  이 헬퍼는 미입력 시 화면 밖 에러를 사용자가 인지하도록 스크롤/포커스 대상을 잡는 용도)
+  FocusNode? _invalidBirthFocus() {
+    final birthType = _selectedCategory?.birthInputType ??
+        (_isChildCategory ? 'YEAR_ONLY' : 'NONE');
+    if (birthType == 'NONE') return null; // 부문이 생년월일을 받지 않음
+    final by = _childBirthYearController.text.trim();
+    final invalid = birthType == 'FULL_DATE'
+        ? !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(by)
+        : by.length != 4;
+    return invalid ? _childBirthYearFocus : null;
+  }
+
   /// 폼 검증 실패 시 첫 번째 invalid 필드로 focus + 자동 스크롤.
   /// 사용자가 화면 아래 비밀번호 등을 못 보고 "참가신청 안 됨" 으로 인식하는 문제 방지.
   void _focusFirstInvalidField() {
@@ -1818,14 +1837,15 @@ class _ContestRegistrationScreenState
       } else if (_childNameController.text.trim().isEmpty) {
         target = _childNameFocus;
       } else {
-        final by = _childBirthYearController.text.trim();
-        if (by.isEmpty || by.length != 4) target = _childBirthYearFocus;
+        target = _invalidBirthFocus();
       }
     } else {
       if (_nameController.text.trim().isEmpty) {
         target = _nameFocus;
       } else if (_phoneController.text.trim().isEmpty) {
         target = _phoneFocus;
+      } else {
+        target = _invalidBirthFocus();
       }
     }
     // 비밀번호 — 본인/자녀 공통, 보통 화면 아래쪽이라 가장 자주 놓침
