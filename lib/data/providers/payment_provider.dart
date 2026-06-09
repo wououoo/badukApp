@@ -149,3 +149,10 @@ final refundPoliciesProvider = FutureProvider.family<List<RefundPolicy>, int?>((
   final service = ref.watch(paymentServiceProvider);
   return service.getRefundPolicies(homepageId: homepageId);
 });
+
+/// 신청 시점 환불 안내 프로바이더 (문구+계산식 모두 백엔드 생성). arg=(homepageId, baseFee)
+final registrationNoticeProvider =
+    FutureProvider.family<Map<String, dynamic>, ({int homepageId, int baseFee})>((ref, arg) async {
+  final service = ref.watch(paymentServiceProvider);
+  return service.getRegistrationNotice(homepageId: arg.homepageId, baseFee: arg.baseFee);
+});

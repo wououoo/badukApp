@@ -178,6 +178,19 @@ class PaymentService {
     return [];
   }
 
+  /// GET /api/refund/registration-notice — 신청 시점 환불 안내(문구+계산식 모두 백엔드 생성)
+  Future<Map<String, dynamic>> getRegistrationNotice({required int homepageId, required int baseFee}) async {
+    final response = await _apiClient.get(
+      '${ApiConstants.refund}/registration-notice',
+      queryParameters: {'homepageId': homepageId, 'baseFee': baseFee},
+    );
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return Map<String, dynamic>.from(data['data'] as Map);
+    }
+    return <String, dynamic>{};
+  }
+
   String _jsonEncode(Map<String, dynamic> data) {
     return jsonEncode(data);
   }

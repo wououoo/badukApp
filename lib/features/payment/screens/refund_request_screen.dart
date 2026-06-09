@@ -492,7 +492,9 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '결제 당일 취소 — 환불율 100% 적용, ${_formatNumber(calculation.refundAmount)}원이 환불됩니다.',
+                refundPg > 0
+                    ? '결제 당일 취소 — 환불율 100%이나 토스 환불수수료 ${_formatNumber(refundPg)}원 차감 후 ${_formatNumber(calculation.refundAmount)}원이 환불됩니다.'
+                    : '결제 당일 취소 — 환불율 100%, 전액 ${_formatNumber(calculation.refundAmount)}원이 환불됩니다.',
                 style: const TextStyle(
                     fontSize: 13, color: Color(0xFF047857), fontWeight: FontWeight.w600, height: 1.5),
               ),
