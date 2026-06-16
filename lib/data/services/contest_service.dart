@@ -582,6 +582,8 @@ class ContestCategory {
   final String? feeDescription; // 참가비 설명
   final int? currentParticipants; // 현재 참가자 수
   final bool onsiteOnly;       // 현장 접수 전용 (true면 온라인 신청 차단)
+  final bool registrationClosed;       // 부문 접수 마감 (운영자 강제마감 CLOSED 또는 접수기간 종료)
+  final String? registrationOverride;  // "AUTO" / "OPEN" / "CLOSED"
   final String? groupName;     // 그룹명 (예: "금학산부", "유소년부") - 부문 묶음 표시용
 
   ContestCategory({
@@ -601,6 +603,8 @@ class ContestCategory {
     this.feeDescription,
     this.currentParticipants,
     this.onsiteOnly = false,
+    this.registrationClosed = false,
+    this.registrationOverride,
     this.groupName,
   });
 
@@ -622,6 +626,8 @@ class ContestCategory {
       feeDescription: json['feeDescription'],
       currentParticipants: json['currentParticipants'],
       onsiteOnly: json['onsiteOnly'] == true,
+      registrationClosed: json['registrationClosed'] == true,
+      registrationOverride: json['registrationOverride'],
       groupName: json['groupName'],
     );
   }

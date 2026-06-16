@@ -448,10 +448,13 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
     final registeredAt = reg['registeredAt'] as String?;
     final registrationId = reg['registrationId'] as int? ?? 0;
 
+    // 주최측 취소 불가 정책 (부문 override + 대회 전체 합산, 백엔드 cancellationBlocked)
+    final cancellationBlocked = reg['cancellationBlocked'] == true;
+
     // 액션 버튼 표시 조건
     final canEdit = status == 'PENDING' || status == 'APPROVED';
-    final canCancel = status == 'PENDING' || (status == 'APPROVED' && paymentStatus != 'COMPLETED');
-    final canRefund = status == 'APPROVED' && paymentStatus == 'COMPLETED';
+    final canCancel = !cancellationBlocked && (status == 'PENDING' || (status == 'APPROVED' && paymentStatus != 'COMPLETED'));
+    final canRefund = !cancellationBlocked && (status == 'APPROVED' && paymentStatus == 'COMPLETED');
     final canPay = fee > 0 && unpaid > 0 && (paymentStatus == 'UNPAID' || paymentStatus == 'PENDING')
         && (status == 'PENDING' || status == 'APPROVED');
     final hasRefund = paymentStatus == 'REFUNDED' || paymentStatus == 'PARTIAL_REFUNDED';
@@ -524,6 +527,32 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                       child: Text(
                         '부문을 바꾸시려면 [취소 신청]으로 환불받으신 후, 원하시는 부문으로 새로 신청해주세요.\n환불 정책에 따라 일부 차감될 수 있습니다.',
                         style: TextStyle(fontSize: 12, color: const Color(0xFF0369A1), height: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // 취소 불가 정책 안내 (활성 신청인데 주최측이 취소를 막은 경우)
+            if (cancellationBlocked && (status == 'PENDING' || status == 'APPROVED')) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.block, size: 18, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '주최측 정책에 따라 현재 참가신청 취소가 불가합니다. 문의처로 연락해주세요.',
+                        style: TextStyle(fontSize: 12, color: AppColors.error, height: 1.5),
                       ),
                     ),
                   ],

@@ -158,6 +158,10 @@ class _ContestRegistrationScreenState
       _showError('참가 부문을 선택해주세요.');
       return;
     }
+    if (_selectedCategory!.registrationClosed) {
+      _showError('선택하신 부문은 접수가 마감되었습니다.');
+      return;
+    }
     if (!_agreedPersonalInfo || !_agreedThirdParty) {
       _showError('필수 동의 항목에 모두 동의해주세요.');
       return;
@@ -712,9 +716,12 @@ class _ContestRegistrationScreenState
       child: Column(
         children: selectableCategories.map((category) {
           final isSelected = _selectedCategory?.id == category.id;
+          final closed = category.registrationClosed; // 운영자 강제마감(CLOSED) 또는 접수기간 종료
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = category),
-            child: Container(
+            onTap: closed ? null : () => setState(() => _selectedCategory = category),
+            child: Opacity(
+              opacity: closed ? 0.5 : 1.0,
+              child: Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -807,6 +814,17 @@ class _ContestRegistrationScreenState
                             );
                           }),
                         ],
+                        if (category.registrationClosed) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.block, size: 14, color: AppColors.error),
+                              const SizedBox(width: 4),
+                              Text('접수 마감',
+                                  style: TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -873,6 +891,7 @@ class _ContestRegistrationScreenState
                     ),
                 ],
               ),
+            ),
             ),
           );
         }).toList(),
