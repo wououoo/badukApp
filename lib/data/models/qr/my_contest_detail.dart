@@ -76,6 +76,8 @@ class MyParticipation {
   final String? tournamentOpponent;
   final String? tournamentMatchStatus;
   final List<TournamentMatchInfo> tournamentMatches;
+  final int? tournamentPlayerId;  // 본선 TournamentPlayer.id (본선 대진표 '내 경기' 강조)
+  final String? deChampionStatus; // 본선 최종 상태 (우승/준우승/N강)
 
   // 팀 스위스 전용
   final List<TeamMember> teamMembers;
@@ -110,6 +112,8 @@ class MyParticipation {
     this.tournamentOpponent,
     this.tournamentMatchStatus,
     this.tournamentMatches = const [],
+    this.tournamentPlayerId,
+    this.deChampionStatus,
     this.teamMembers = const [],
   });
 
@@ -150,6 +154,8 @@ class MyParticipation {
       tournamentMatches: (json['tournamentMatches'] as List<dynamic>?)
           ?.map((m) => TournamentMatchInfo.fromJson(m as Map<String, dynamic>))
           .toList() ?? [],
+      tournamentPlayerId: json['tournamentPlayerId'],
+      deChampionStatus: json['deChampionStatus'],
       teamMembers: (json['teamMembers'] as List<dynamic>?)
           ?.map((m) => TeamMember.fromJson(m))
           .toList() ?? [],
@@ -184,6 +190,7 @@ class TournamentMatchInfo {
   final String? opponent;
   final String? status;
   final bool? won;
+  final bool? bye;   // 부전승 여부 (round 0 등에서 상대 없음)
 
   TournamentMatchInfo({
     required this.round,
@@ -191,6 +198,7 @@ class TournamentMatchInfo {
     this.opponent,
     this.status,
     this.won,
+    this.bye,
   });
 
   factory TournamentMatchInfo.fromJson(Map<String, dynamic> json) {
@@ -200,6 +208,7 @@ class TournamentMatchInfo {
       opponent: json['opponent'],
       status: json['status'],
       won: json['won'],
+      bye: json['bye'],
     );
   }
 }

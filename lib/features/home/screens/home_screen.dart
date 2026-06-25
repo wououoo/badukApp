@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/banner_carousel.dart';
@@ -1038,20 +1037,9 @@ class HomeScreen extends ConsumerWidget {
     return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
   }
 
-  /// 라이브 페이지 열기
-  void _openLivePage(BuildContext context) async {
-    final liveUrl = '${ApiConstants.webUrl}/live';
-    final uri = Uri.parse(liveUrl);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('라이브 페이지를 열 수 없습니다')),
-        );
-      }
-    }
+  /// 라이브 페이지 열기 (네이티브 내장 목록 화면)
+  void _openLivePage(BuildContext context) {
+    context.push('/live');
   }
 
   /// 즐겨찾기 바텀시트

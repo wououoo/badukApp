@@ -1009,6 +1009,25 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
+          // 본선 최종 상태 (우승/준우승/N강) — 진행중("진행중 (8강)" 등)이 아닐 때만 강조
+          if (participation.deChampionStatus != null && !participation.deChampionStatus!.startsWith('진행중')) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFD7E14),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                participation.deChampionStatus == '우승'
+                    ? '🏆 우승'
+                    : participation.deChampionStatus == '준우승'
+                        ? '🥈 준우승'
+                        : participation.deChampionStatus!,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           // 현재 단계
           if (participation.tournamentStage != null)
@@ -1098,7 +1117,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
               // 상대
               Expanded(
                 child: Text(
-                  'vs ${match.opponent ?? "?"}',
+                  (match.bye == true || match.opponent == null) ? '부전승' : 'vs ${match.opponent}',
                   style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1235,7 +1254,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
         // 본선 선택 시 토너먼트 대진표
         if (hasTournament && _showTournament)
           Expanded(
-            child: _buildTournamentRounds(participation!.gameRoomId),
+            child: _buildTournamentRounds(participation!.gameRoomId, myTournamentPlayerId: participation.tournamentPlayerId),
           )
         else ...[
           // 예선 라운드 선택 (participation별 라운드 수 사용)
@@ -1287,6 +1306,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
               deGroup: participation?.deGroup,
               contestType: effectiveType,
               myParticipantId: participation?.participantId,
+              myTeamName: participation?.teamName,
             ),
           ),
         ],
@@ -1362,7 +1382,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
   }
 
   /// 토너먼트 본선 라운드 표시
-  Widget _buildTournamentRounds(int gameRoomId) {
+  Widget _buildTournamentRounds(int gameRoomId, {int? myTournamentPlayerId}) {
     final asyncBracket = ref.watch(tournamentBracketProvider(gameRoomId));
 
     return asyncBracket.when(
@@ -1425,7 +1445,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
 
             // 매치 목록
             Expanded(
-              child: _buildTournamentMatchList(bracket),
+              child: _buildTournamentMatchList(bracket, myTournamentPlayerId),
             ),
           ],
         );
@@ -1434,7 +1454,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
   }
 
   /// 토너먼트 본선 매치 리스트
-  Widget _buildTournamentMatchList(TournamentBracketResponse bracket) {
+  Widget _buildTournamentMatchList(TournamentBracketResponse bracket, [int? myTournamentPlayerId]) {
     final matches = bracket.matchesForRound(_selectedTournamentRound);
 
     if (matches.isEmpty) {
@@ -1452,7 +1472,10 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
         if (match.isWaiting && match.player1Id == null && match.player2Id == null) {
           return _buildWaitingMatchCard(match);
         }
-        return _buildMatchCard(match.toMatchResult());
+        // 본선 player id = TournamentPlayer.id → 본인 tournamentPlayerId와 비교해 강조
+        final bool isMyMatch = myTournamentPlayerId != null &&
+            (match.player1Id == myTournamentPlayerId || match.player2Id == myTournamentPlayerId);
+        return _buildMatchCard(match.toMatchResult(), isMyMatch: isMyMatch);
       },
     );
   }
@@ -2046,8 +2069,8 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
       );
     }
 
-    final isPlayer1Winner = match.isCompleted && match.winner == match.player1;
-    final isPlayer2Winner = match.isCompleted && match.winner == match.player2;
+    final isPlayer1Winner = match.isCompleted && !match.isNone && match.winnerId != null && match.winnerId == match.player1Id;
+    final isPlayer2Winner = match.isCompleted && !match.isNone && match.winnerId != null && match.winnerId == match.player2Id;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2090,12 +2113,12 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppColors.success.withOpacity(0.1),
+                              color: (match.isNone ? AppColors.error : AppColors.success).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
-                              '종료',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.success),
+                            child: Text(
+                              match.isNone ? '양패' : '종료',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: match.isNone ? AppColors.error : AppColors.success),
                             ),
                           ),
                         ],
@@ -2167,7 +2190,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
     );
   }
 
-  Widget _buildRoundMatches(int sortId, {int? deGroup, String? contestType, int? myParticipantId}) {
+  Widget _buildRoundMatches(int sortId, {int? deGroup, String? contestType, int? myParticipantId, String? myTeamName}) {
     final params = QRRoundResultParams(
       contestId: widget.contestId,
       round: _selectedRound,
@@ -2176,6 +2199,16 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
     );
     final asyncValue = ref.watch(qrRoundResultsProvider(params));
     final bool isDE = contestType == 'DE';
+    final bool isTeamSwiss = contestType == 'TEAM_SWISS';
+    // 본인 경기 판정: 단체전은 팀명(player1/player2=팀명), 그 외는 participantId.
+    bool isMine(MatchResult m) {
+      if (isTeamSwiss) {
+        return myTeamName != null && (m.player1 == myTeamName || m.player2 == myTeamName);
+      }
+      return myParticipantId != null &&
+          (m.player1Id == myParticipantId ||
+              (m.player2Id != null && m.player2Id == myParticipantId));
+    }
 
     return asyncValue.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -2246,10 +2279,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
                     ),
                     // 매치 카드들
                     ...groupMatches.map((m) {
-                      final bool isMyMatch = myParticipantId != null &&
-                          (m.player1Id == myParticipantId ||
-                              (m.player2Id != null && m.player2Id == myParticipantId));
-                      return _buildMatchCard(m, isMyMatch: isMyMatch);
+                      return _buildMatchCard(m, isMyMatch: isMine(m));
                     }),
                   ],
                 ),
@@ -2264,10 +2294,7 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
           itemCount: result.matches.length,
           itemBuilder: (context, index) {
             final match = result.matches[index];
-            final bool isMyMatch = myParticipantId != null &&
-                (match.player1Id == myParticipantId ||
-                    (match.player2Id != null && match.player2Id == myParticipantId));
-            return _buildMatchCard(match, isMyMatch: isMyMatch);
+            return _buildMatchCard(match, isMyMatch: isMine(match));
           },
         );
       },
@@ -2321,6 +2348,24 @@ class _MyContestDetailScreenState extends ConsumerState<MyContestDetailScreen>
                       ),
                     ),
                   ],
+                ),
+              ),
+            // 단체전 팀 무승부(TIE) 표시
+            if (match.isTie)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F3F5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      '무승부',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6B7280)),
+                    ),
+                  ),
                 ),
               ),
             isNoneMatch

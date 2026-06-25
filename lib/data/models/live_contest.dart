@@ -39,11 +39,17 @@ class LiveContest {
   final DateTime? startDate;
   final DateTime? endDate;
   final String? type;
+  final List<String> types;   // 복수 유형 (연결대회 포함) — 백엔드 제공, 표시용
   final String? status;
   final String? location;
+  final String? contestProv;
+  final String? contestDetailLocation;
+  final int? sortCount;
+  final int? totalParticipants;
   final int? currentRound;
   final int? maxRound;
   final List<LiveContestSort> sorts;
+  final List<LiveLinkedContest> linkedContests;  // 묶은(연결) 대회들 — 목록 카드 표시용
 
   LiveContest({
     required this.id,
@@ -51,11 +57,17 @@ class LiveContest {
     this.startDate,
     this.endDate,
     this.type,
+    this.types = const [],
     this.status,
     this.location,
+    this.contestProv,
+    this.contestDetailLocation,
+    this.sortCount,
+    this.totalParticipants,
     this.currentRound,
     this.maxRound,
     this.sorts = const [],
+    this.linkedContests = const [],
   });
 
   factory LiveContest.fromJson(Map<String, dynamic> json) {
@@ -64,17 +76,32 @@ class LiveContest {
             .toList() ??
         [];
 
+    // 복수 유형: types 우선, 없으면 단일 type로 폴백
+    final typesList = (json['types'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        (json['type'] != null ? [json['type'].toString()] : <String>[]);
+
     return LiveContest(
       id: json['id'] ?? json['contestId'] ?? 0,
       name: json['name'] ?? json['contestName'] ?? '',
       startDate: _parseDate(json['startDate']),
       endDate: _parseDate(json['endDate']),
       type: json['type'],
+      types: typesList,
       status: json['status'],
       location: json['contestLocation'] ?? json['location'],
+      contestProv: json['contestProv'],
+      contestDetailLocation: json['contestDetailLocation'],
+      sortCount: json['sortCount'],
+      totalParticipants: json['totalParticipants'],
       currentRound: json['currentRound'],
       maxRound: json['maxRound'] ?? json['totalRounds'],
       sorts: sortsList,
+      linkedContests: (json['linkedContests'] as List<dynamic>?)
+              ?.map((e) => LiveLinkedContest.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
@@ -92,6 +119,30 @@ class LiveContest {
   }
 
   bool get isOngoing => status == 'ONGOING';
+}
+
+/// 연결된(묶은) 대회 — 목록 카드의 "연결된 대회" 표시용
+class LiveLinkedContest {
+  final int id;
+  final String contestName;
+  final List<String> types;
+
+  LiveLinkedContest({
+    required this.id,
+    required this.contestName,
+    this.types = const [],
+  });
+
+  factory LiveLinkedContest.fromJson(Map<String, dynamic> json) {
+    return LiveLinkedContest(
+      id: json['id'] ?? 0,
+      contestName: json['contestName'] ?? json['name'] ?? '',
+      types: (json['types'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
 }
 
 /// 대회 상세
@@ -251,6 +302,7 @@ class LivePairingsResponse {
     List<LivePairing> pairingsList = [];
 
     // 기본 pairings 배열
+    final contestType = json['contestType']?.toString();
     final rawPairings = json['pairings'] as List<dynamic>?;
     if (rawPairings != null) {
       for (var item in rawPairings) {
@@ -258,25 +310,36 @@ class LivePairingsResponse {
           // 풀리그/단체전 형식: rounds 배열 안에 matches 또는 results가 있음
           if (item.containsKey('matches') || item.containsKey('results')) {
             final round = item['round'] as int? ?? 1;
-
-            // matches 키 (단체전 풀리그 등)
             final matches = item['matches'] as List<dynamic>? ?? [];
-            for (var match in matches) {
-              if (match is Map<String, dynamic>) {
-                pairingsList.add(LivePairing.fromFullLeagueJson(match, round));
+            final results = item['results'] as List<dynamic>? ?? [];
+
+            // 웹 LivePairingsTable과 동일한 소스 선택 (matches+results 둘 다 넣으면 중복됨):
+            // TEAM_FULL_LEAGUE=matches, TEAM_SWISS=results, FULL_LEAGUE=results 우선·없으면 matches
+            List<dynamic> source;
+            bool fromMatches;
+            if (contestType == 'TEAM_FULL_LEAGUE') {
+              source = matches;
+              fromMatches = true;
+            } else if (contestType == 'TEAM_SWISS') {
+              source = results;
+              fromMatches = false;
+            } else {
+              // FULL_LEAGUE 등: 결과가 있으면 결과, 없으면 스케줄
+              if (results.isNotEmpty) {
+                source = results;
+                fromMatches = false;
+              } else {
+                source = matches;
+                fromMatches = true;
               }
             }
 
-            // results 키 (풀리그 - 통일 필드, 단체전 스위스)
-            final results = item['results'] as List<dynamic>? ?? [];
-            for (var result in results) {
-              if (result is Map<String, dynamic>) {
-                // team1Name이 있으면 단체전 형식으로 파싱
-                if (result.containsKey('team1Name')) {
-                  pairingsList.add(LivePairing.fromFullLeagueJson(result, round));
-                } else {
-                  pairingsList.add(LivePairing.fromJson(result));
-                }
+            for (var m in source) {
+              if (m is! Map<String, dynamic>) continue;
+              if (m.containsKey('team1Name') || fromMatches) {
+                pairingsList.add(LivePairing.fromFullLeagueJson(m, round));
+              } else {
+                pairingsList.add(LivePairing.fromJson(m));
               }
             }
           } else {

@@ -223,6 +223,7 @@ class MatchResult {
   final int? tableNumber;
   final bool isByeMatch;
   final bool isNone; // 양패 (둘 다 패배 처리)
+  final bool isTie;  // 단체전 팀 무승부 (TEAM1/TEAM2 어느 쪽도 아닌 TIE)
   final bool isCompleted;
   final int? group;  // DE 조 번호
 
@@ -240,6 +241,7 @@ class MatchResult {
     this.tableNumber,
     this.isByeMatch = false,
     this.isNone = false,
+    this.isTie = false,
     this.isCompleted = false,
     this.group,
     this.team1Wins,
@@ -262,6 +264,7 @@ class MatchResult {
       tableNumber: json['tableNumber'],
       isByeMatch: bye,
       isNone: none,
+      isTie: json['isTie'] == true,
       isCompleted: json['isCompleted'] ?? (json['winnerId'] != null || none),
       group: json['group'],
       team1Wins: json['team1Wins'],
@@ -590,25 +593,41 @@ class FullLeagueRound {
     final hasResults = json['hasResults'] ?? false;
     final results = json['results'] as List<dynamic>? ?? [];
 
-    // 결과가 있으면 매치에 승패 정보 병합
+    // 결과가 있으면 매치에 승패 정보 병합 — id 기반(동명이인 안전), id 없으면 이름 폴백. 양패(none) 처리.
     if (hasResults && results.isNotEmpty) {
       for (final match in matches) {
         for (final r in results) {
-          if (r is Map<String, dynamic>) {
-            final name = r['nonUserName']?.toString() ?? '';
-            final opponent = r['opponentName']?.toString() ?? '';
-            final winner = r['winner']?.toString();
-            final end = r['end'] == true;
+          if (r is! Map<String, dynamic>) continue;
+          final pid = r['participantId'];
+          final oid = r['opponentId'];
+          final bool byId = pid != null && oid != null &&
+              ((pid == match.player1Id && oid == match.player2Id) ||
+                  (pid == match.player2Id && oid == match.player1Id));
+          final bool byName = (pid == null || oid == null) &&
+              r['nonUserName']?.toString() == match.player1 &&
+              r['opponentName']?.toString() == match.player2;
+          if (!byId && !byName) continue;
 
-            // player1 관점의 레코드 매칭
-            if (name == match.player1 && opponent == match.player2) {
-              if (end && winner != null) {
-                match.winner = winner;
-                match.isCompleted = true;
-              }
-              break;
-            }
+          final bool end = r['end'] == true;
+          final bool none = r['none'] == true;
+          final bool win = r['win'] == true;
+          match.isNone = none;
+          if (none) {
+            match.isCompleted = true;
+            match.winnerId = null;
+            match.winner = null;
+          } else if (end) {
+            match.isCompleted = true;
+            // 이 레코드 관점(participantId)이 player1인지로 승자 id 결정
+            final bool recIsP1 = byId
+                ? (pid == match.player1Id)
+                : (r['nonUserName']?.toString() == match.player1);
+            match.winnerId = win
+                ? (recIsP1 ? match.player1Id : match.player2Id)
+                : (recIsP1 ? match.player2Id : match.player1Id);
+            match.winner = r['winner']?.toString();
           }
+          break;
         }
       }
     }
@@ -634,7 +653,9 @@ class FullLeagueMatch {
 
   // 결과 정보 (hasResults일 때 results에서 매핑)
   String? winner;
+  int? winnerId;   // id기반 승자 판정 (동명이인 안전)
   bool isCompleted;
+  bool isNone;     // 양패 (둘 다 패배 처리)
   bool isBye;
 
   FullLeagueMatch({
@@ -645,7 +666,9 @@ class FullLeagueMatch {
     required this.round,
     this.matchNumber = 0,
     this.winner,
+    this.winnerId,
     this.isCompleted = false,
+    this.isNone = false,
     this.isBye = false,
   });
 

@@ -43,6 +43,7 @@ import '../features/qr/screens/my_contests_screen.dart';
 import '../features/qr/screens/my_contest_detail_screen.dart';
 import '../features/qr/screens/qr_scanner_screen.dart';
 import '../features/live/screens/live_contest_screen.dart';
+import '../features/live/screens/live_contest_list_screen.dart';
 import '../features/payment/screens/payment_screen.dart';
 import '../features/payment/screens/payment_success_screen.dart';
 import '../features/payment/screens/payment_result_screen.dart';
@@ -552,6 +553,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             participant: participant,
           );
         },
+      ),
+
+      // 라이브 대회 목록 (네이티브 내장 — 홈 '라이브' 진입)
+      GoRoute(
+        path: '/live',
+        builder: (context, state) => const LiveContestListScreen(),
       ),
 
       // 라이브 대회 화면 (전체 화면)

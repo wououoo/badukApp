@@ -1234,23 +1234,22 @@ class _LiveContestScreenState extends State<LiveContestScreen>
                     ),
                   ),
 
-                  // VS
+                  // VS (웹과 동일하게 항상 'vs', 부전승 표시는 상대 셀에서)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      pairing.isByeMatch ? '부전승' : 'vs',
+                      'vs',
                       style: TextStyle(
                         fontSize: 14,
-                        color: pairing.isByeMatch ? AppColors.warning : AppColors.textSecondary,
-                        fontWeight: pairing.isByeMatch ? FontWeight.w500 : FontWeight.normal,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
 
-                  // 선수/팀 2
+                  // 선수/팀 2 (부전승이면 상대 자리에 '부전승' 표시 — 웹과 동일)
                   Expanded(
                     child: _buildPlayerInfo(
-                      name: pairing.player2Name ?? '-',
+                      name: pairing.isByeMatch ? '부전승' : (pairing.player2Name ?? '-'),
                       isWinner: isPlayer2Winner,
                       isBlack: false,
                       isBye: pairing.isByeMatch,
@@ -1383,7 +1382,7 @@ class _LiveContestScreenState extends State<LiveContestScreen>
           ),
         Flexible(
           child: Text(
-            isBye && !isBlack ? '' : name,
+            name,
             style: TextStyle(
               fontSize: 16,
               fontWeight: isWinner ? FontWeight.w600 : FontWeight.normal,
