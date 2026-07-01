@@ -15,6 +15,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../data/models/homepage.dart';
 import '../widgets/refund_policy_section.dart';
 import '../widgets/payment_info_box.dart';
+import '../widgets/registration_option_selector.dart';
 
 /// 대회 참가신청 화면
 class ContestRegistrationScreen extends ConsumerStatefulWidget {
@@ -70,6 +71,11 @@ class _ContestRegistrationScreenState
   // 결제·환불 정책 표시용 (PaymentInfoBox 입력)
   HomepageDetail? _homepageDetail;
 
+  // 추가 옵션(티셔츠 사이즈 등)
+  List<Map<String, dynamic>> _optionDefs = [];
+  List<Map<String, dynamic>> _optionPayload = [];
+  bool _optionsValid = true;
+
   // 기력 옵션
   final _skillLevels = [
     '9단', '8단', '7단', '6단', '5단', '4단', '3단', '2단', '1단',
@@ -92,6 +98,17 @@ class _ContestRegistrationScreenState
     super.initState();
     _initFromUserProfile();
     _loadHomepageDetail();
+    _loadOptions();
+  }
+
+  /// 추가 옵션(티셔츠 사이즈 등) 정의 로드
+  Future<void> _loadOptions() async {
+    try {
+      final defs = await _homepageService.getRegistrationOptions(widget.homepageId);
+      if (mounted) setState(() => _optionDefs = defs);
+    } catch (e) {
+      debugPrint('[옵션 조회 실패] $e');
+    }
   }
 
   Future<void> _loadHomepageDetail() async {
@@ -166,6 +183,10 @@ class _ContestRegistrationScreenState
       _showError('필수 동의 항목에 모두 동의해주세요.');
       return;
     }
+    if (!_optionsValid) {
+      _showError('필수 추가 항목(예: 티셔츠 사이즈)을 선택해주세요.');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -189,6 +210,7 @@ class _ContestRegistrationScreenState
           region: _selectedRegion,
           club: _clubController.text.trim(),
           mobileUserId: mobileUserId,
+          options: _optionPayload,
         );
       } else if (_isForChild) {
         // 자녀 대리 신청
@@ -205,6 +227,7 @@ class _ContestRegistrationScreenState
           birthYear: _childBirthYearController.text.trim(),
           parentPhone: _phoneController.text.trim(),
           mobileUserId: mobileUserId,
+          options: _optionPayload,
         );
       } else {
         // 본인 신청 — type은 선택한 부문의 contestType을 그대로 따름
@@ -233,6 +256,7 @@ class _ContestRegistrationScreenState
           region: isChildSelf ? null : _selectedRegion,
           club: isChildSelf ? null : _clubController.text.trim(),
           mobileUserId: mobileUserId,
+          options: _optionPayload,
         );
       }
 
@@ -610,6 +634,12 @@ class _ContestRegistrationScreenState
                 // 비밀번호
                 _buildPasswordSection(),
                 const SizedBox(height: 24),
+
+                // 추가 선택 항목(티셔츠 사이즈 등) — 옵션이 있을 때만
+                if (_optionDefs.isNotEmpty) ...[
+                  _buildOptionSection(),
+                  const SizedBox(height: 24),
+                ],
 
                 // 결제 안내 + 환불 정책 (부문 선택 후 + 유료 부문일 때만 PaymentInfoBox)
                 if (_selectedCategory != null
@@ -1599,6 +1629,21 @@ class _ContestRegistrationScreenState
           if (v?.isEmpty ?? true) return '비밀번호를 입력하세요';
           if (v!.length != 4) return '4자리 숫자를 입력하세요';
           return null;
+        },
+      ),
+    );
+  }
+
+  /// 추가 선택 항목(티셔츠 사이즈 등)
+  Widget _buildOptionSection() {
+    return _buildSection(
+      title: '추가 선택 항목',
+      subtitle: '티셔츠 사이즈 등 참가 시 선택해주세요',
+      child: RegistrationOptionSelector(
+        definitions: _optionDefs,
+        onChanged: (payload, valid) {
+          _optionPayload = payload;
+          _optionsValid = valid;
         },
       ),
     );

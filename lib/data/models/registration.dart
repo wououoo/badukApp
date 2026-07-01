@@ -28,6 +28,9 @@ class RegistrationData {
   // 앱 사용자 연동 (푸시 알림용)
   final int? mobileUserId;
 
+  // 추가 옵션(티셔츠 사이즈 등) 응답 — [{key, values:[...], text}]
+  final List<Map<String, dynamic>>? options;
+
   RegistrationData({
     required this.homepageId,
     required this.categoryId,
@@ -48,6 +51,7 @@ class RegistrationData {
     this.teamMemberOrder,
     this.parentRegistrationId,
     this.mobileUserId,
+    this.options,
   });
 
   Map<String, dynamic> toJson() {
@@ -88,6 +92,11 @@ class RegistrationData {
       if (parentRegistrationId != null) {
         data['parentRegistrationId'] = parentRegistrationId;
       }
+    }
+
+    // 추가 옵션(티셔츠 사이즈 등) — 타입 무관 공통. 백엔드가 confirm/생성 시 저장
+    if (options != null && options!.isNotEmpty) {
+      data['options'] = options;
     }
 
     return data;

@@ -437,8 +437,12 @@ class _LiveContestScreenState extends State<LiveContestScreen>
 
     // DE/TOURNAMENT 타입은 전용 위젯 사용
     if (_isDEType) {
+      final deContestId = _getContestIdForSort(_selectedSort!.id);
       return LiveDEContent(
-        contestId: _getContestIdForSort(_selectedSort!.id),
+        // 부문 변경 시 Flutter가 기존 State를 재사용해 이전 부문 데이터가 남는 문제 방지.
+        // sortId 기반 key로 위젯을 강제 재생성 → initState 재실행으로 새 부문 데이터를 즉시 로드.
+        key: ValueKey('de-$deContestId-${_selectedSort!.id}'),
+        contestId: deContestId,
         sortId: _selectedSort!.id,
       );
     }
@@ -1111,6 +1115,8 @@ class _LiveContestScreenState extends State<LiveContestScreen>
     final pairings = _pairingsResponse!.pairings
         .where((p) => p.round == _selectedRound)
         .toList();
+    // 풀리그 홀수 인원: 선택 라운드의 쉬는 선수(부전승)
+    final restingPlayer = _pairingsResponse!.restingByRound[_selectedRound];
 
     return Column(
       children: [
@@ -1144,20 +1150,51 @@ class _LiveContestScreenState extends State<LiveContestScreen>
             ),
           ),
 
-        // 대진표 목록
+        // 대진표 목록 (쉬는 선수가 있으면 마지막 항목으로 카드 추가)
         Expanded(
-          child: pairings.isEmpty
+          child: (pairings.isEmpty && restingPlayer == null)
               ? const Center(child: Text('해당 라운드 대진이 없습니다.'))
               : ListView.builder(
                   physics: const _SlowScrollPhysics(),
                   padding: const EdgeInsets.all(16),
-                  itemCount: pairings.length,
+                  itemCount: pairings.length + (restingPlayer != null ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (index == pairings.length && restingPlayer != null) {
+                      return _buildLiveRestingPlayerCard(restingPlayer);
+                    }
                     return _buildPairingCard(pairings[index]);
                   },
                 ),
         ),
       ],
+    );
+  }
+
+  /// 풀리그 쉬는 선수(부전승) 카드
+  Widget _buildLiveRestingPlayerCard(String playerName) {
+    final cleanName = playerName.replaceAll(RegExp(r'\s+\d+(단|급)$'), '').trim();
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: AppColors.warning.withOpacity(0.3)),
+      ),
+      color: AppColors.warning.withOpacity(0.05),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.pause_circle_outline, size: 18, color: AppColors.warning),
+            const SizedBox(width: 8),
+            Text(
+              '쉬는 선수(부전승): $cleanName',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.warning),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

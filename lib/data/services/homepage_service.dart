@@ -32,6 +32,25 @@ class HomepageService {
     return HomepageDetail.fromJson(response.data);
   }
 
+  /// 신청 추가 옵션(티셔츠 사이즈 등) 정의 조회
+  /// GET /api/registration-options/{homepageId}
+  Future<List<Map<String, dynamic>>> getRegistrationOptions(int homepageId, {int? categoryId}) async {
+    try {
+      final path =
+          '/registration-options/$homepageId${categoryId != null ? '?categoryId=$categoryId' : ''}';
+      final response = await _apiClient.get(path);
+      final data = response.data;
+      if (data is Map && data['options'] is List) {
+        return (data['options'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// 홈페이지 접근 가능 여부 확인
   /// GET /api/contest-homepage/{homepageId}/accessible
   Future<bool> isHomepageAccessible(int homepageId) async {

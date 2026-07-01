@@ -289,6 +289,8 @@ class LivePairingsResponse {
   final int? round;
   final int? gameRoomId;
   final String? contestType;
+  // 풀리그 홀수 인원: 라운드별 쉬는 선수(부전승) 이름 { round: name }
+  final Map<int, String> restingByRound;
 
   LivePairingsResponse({
     required this.pairings,
@@ -296,10 +298,12 @@ class LivePairingsResponse {
     this.round,
     this.gameRoomId,
     this.contestType,
+    this.restingByRound = const {},
   });
 
   factory LivePairingsResponse.fromJson(Map<String, dynamic> json) {
     List<LivePairing> pairingsList = [];
+    final Map<int, String> restingByRound = {};
 
     // 기본 pairings 배열
     final contestType = json['contestType']?.toString();
@@ -312,6 +316,12 @@ class LivePairingsResponse {
             final round = item['round'] as int? ?? 1;
             final matches = item['matches'] as List<dynamic>? ?? [];
             final results = item['results'] as List<dynamic>? ?? [];
+
+            // 풀리그 쉬는 선수(부전승) 라운드별 보존
+            final resting = item['restingPlayer']?.toString();
+            if (resting != null && resting.isNotEmpty) {
+              restingByRound[round] = resting;
+            }
 
             // 웹 LivePairingsTable과 동일한 소스 선택 (matches+results 둘 다 넣으면 중복됨):
             // TEAM_FULL_LEAGUE=matches, TEAM_SWISS=results, FULL_LEAGUE=results 우선·없으면 matches
@@ -356,6 +366,7 @@ class LivePairingsResponse {
       round: json['round'],
       gameRoomId: json['gameRoomId'],
       contestType: json['contestType'],
+      restingByRound: restingByRound,
     );
   }
 }
