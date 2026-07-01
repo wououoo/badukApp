@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +18,8 @@ import '../../../data/providers/user_provider.dart';
 import '../widgets/contest_status_badge.dart';
 import '../widgets/contest_photos_tab.dart';
 import '../widgets/refund_policy_section.dart';
+import '../../live/widgets/live_sort_content.dart';
+import '../../live/widgets/live_de_content.dart';
 
 // Re-export for RankingEntry type
 export '../../../data/services/contest_service.dart' show SortRankings, RankingEntry;
@@ -38,9 +40,6 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
   late TabController _tabController;
   int? _selectedCategoryId;
   int _selectedSortIndex = 0; // 결과 탭에서 선택된 부문 인덱스
-  bool _mcMahonSortByScore = true; // 맥마흔 정렬: true=점수순, false=승수순
-  int _pairingSortIndex = 0; // 대진표 탭에서 선택된 부문 인덱스
-  int _selectedRound = 1; // 대진표 탭에서 선택된 라운드
 
   // 홈페이지 안내 이미지 (운영진이 올린 부문/상금/지도/대진표/결과 안내)
   List<HomepageImage> _homepageImages = [];
@@ -49,7 +48,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadHomepageImages();
   }
 
@@ -341,7 +340,6 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
           _buildCategoryTab(contest),
           _buildPrizeTab(contest),
           _buildMapTab(contest),
-          _buildPairingsTab(contest),
           _buildResultsTab(contest),
           ContestPhotosTab(homepageId: widget.contestId),
         ],
@@ -486,51 +484,72 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverTabBarDelegate(
-        height: 92,
+        height: 52,
         child: _buildWrapTabs(),
       ),
     );
   }
 
-  /// 탭을 2줄로 자동 줄바꿈하는 칩 형태 (글자 작게 하지 않고 잘림 방지)
+  /// 탭바 (가로 스크롤 + 아이콘 + 언더라인 인디케이터)
   Widget _buildWrapTabs() {
-    const labels = ['정보', '부문', '상금', '지도', '대진표', '결과', '사진'];
+    final tabs = <({IconData icon, String label})>[
+      (icon: Icons.info_outline, label: '정보'),
+      (icon: Icons.category_outlined, label: '부문'),
+      (icon: Icons.emoji_events_outlined, label: '상금'),
+      (icon: Icons.place_outlined, label: '지도'),
+      (icon: Icons.leaderboard_outlined, label: '결과'),
+      (icon: Icons.photo_library_outlined, label: '사진'),
+    ];
     return AnimatedBuilder(
       animation: _tabController,
       builder: (context, _) {
         return Container(
           width: double.infinity,
           color: AppColors.surface,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          alignment: Alignment.centerLeft,
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(labels.length, (i) {
-              final selected = _tabController.index == i;
-              return GestureDetector(
-                onTap: () => _tabController.animateTo(i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : AppColors.border,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: List.generate(tabs.length, (i) {
+                final selected = _tabController.index == i;
+                final color =
+                    selected ? AppColors.primary : AppColors.textSecondary;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _tabController.animateTo(i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color:
+                              selected ? AppColors.primary : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(tabs[i].icon, size: 18, color: color),
+                        const SizedBox(width: 6),
+                        Text(
+                          tabs[i].label,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                            color: color,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Text(
-                    labels[i],
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? Colors.white : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         );
       },
@@ -1683,42 +1702,6 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
     );
   }
 
-  Widget _buildTableHeaderCell(String text, {bool isFirst = false}) {
-    return Container(
-      constraints: BoxConstraints(
-        minWidth: isFirst ? 100 : 80,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-        ),
-        textAlign: isFirst ? TextAlign.left : TextAlign.center,
-      ),
-    );
-  }
-
-  Widget _buildTableCell(String text, {bool isTitle = false, bool isPrize = false}) {
-    return Container(
-      constraints: BoxConstraints(
-        minWidth: isTitle ? 100 : 80,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: isTitle || isPrize ? FontWeight.w600 : FontWeight.normal,
-          color: isPrize ? AppColors.primary : AppColors.textPrimary,
-        ),
-        textAlign: isTitle ? TextAlign.left : TextAlign.center,
-      ),
-    );
-  }
-
   Widget _buildEmptyState({
     required IconData icon,
     required String message,
@@ -1803,9 +1786,42 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
     );
   }
 
+  /// gameRoomType이 영문 enum(DE/SWISS/...) 또는 레거시 한글("더블엘리미네이션" 등)로
+  /// 혼재되어 오므로, 라이브 위젯이 기대하는 영문 enum으로 정규화한다.
+  String _normalizeContestType(String? raw) {
+    final t = (raw ?? '').trim();
+    final u = t.toUpperCase();
+    const known = {
+      'DE',
+      'TOURNAMENT',
+      'MCM',
+      'SWISS',
+      'FULL_LEAGUE',
+      'TEAM_SWISS',
+      'TEAM_FULL_LEAGUE',
+    };
+    if (known.contains(u)) return u;
+    // 레거시 한글 표시명 → enum (부분일치, 순서 중요)
+    if (t.contains('더블')) return 'DE';
+    if (t.contains('토너먼트') || t.contains('싱글')) return 'TOURNAMENT';
+    if (t.contains('맥마흔')) return 'MCM';
+    final isTeam = t.contains('단체');
+    final isFull = t.contains('풀');
+    if (isTeam && isFull) return 'TEAM_FULL_LEAGUE';
+    if (isTeam) return 'TEAM_SWISS';
+    if (isFull) return 'FULL_LEAGUE';
+    if (t.contains('스위스')) return 'SWISS';
+    return u; // 알 수 없으면 원본(대문자)
+  }
+
   Widget _buildRankingsContent(List<SortRankings> sortRankings) {
+    if (_selectedSortIndex >= sortRankings.length) _selectedSortIndex = 0;
     final currentSort = sortRankings[_selectedSortIndex];
-    final isMcMahon = currentSort.gameRoomType == 'MCM';
+    // gameRoomType은 영문 enum('DE') 또는 레거시 한글('더블엘리미네이션')로 혼재되어 오므로 정규화
+    final type = _normalizeContestType(currentSort.gameRoomType);
+    final isDE = type == 'DE' || type == 'TOURNAMENT';
+    final cid = currentSort.contestId;
+    final sid = currentSort.sortId;
 
     return Column(
       children: [
@@ -1850,616 +1866,26 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               ),
             ),
           ),
-        // 맥마흔 정렬 옵션
-        if (isMcMahon)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border(
-                bottom: BorderSide(color: AppColors.divider),
-              ),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '정렬: ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('점수순'),
-                  selected: _mcMahonSortByScore,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _mcMahonSortByScore = true);
-                    }
-                  },
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surfaceVariant,
-                  labelStyle: TextStyle(
-                    color: _mcMahonSortByScore ? Colors.white : AppColors.textPrimary,
-                    fontWeight: _mcMahonSortByScore ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('승수순'),
-                  selected: !_mcMahonSortByScore,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _mcMahonSortByScore = false);
-                    }
-                  },
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surfaceVariant,
-                  labelStyle: TextStyle(
-                    color: !_mcMahonSortByScore ? Colors.white : AppColors.textPrimary,
-                    fontWeight: !_mcMahonSortByScore ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-          ),
-        // 순위표
+        // 라이브 순위/대진 (부문 단위 임베드 — DE는 예선/본선, 그 외는 순위표/대진표 탭)
         Expanded(
-          child: _buildRankingsList(currentSort),
+          child: (cid == null || sid == null)
+              ? _buildEmptyResultsState()
+              : isDE
+                  ? LiveDEContent(
+                      key: ValueKey('de-$cid-$sid'),
+                      contestId: cid,
+                      sortId: sid,
+                    )
+                  : LiveSortContent(
+                      key: ValueKey('sort-$cid-$sid'),
+                      contestId: cid,
+                      sortId: sid,
+                      contestType: type,
+                      autoRefresh: false,
+                    ),
         ),
       ],
     );
-  }
-
-  Widget _buildRankingsList(SortRankings sortRankings) {
-    if (sortRankings.rankings.isEmpty) {
-      return _buildEmptyResultsState();
-    }
-
-    final gameRoomType = sortRankings.gameRoomType;
-    final isMcMahon = gameRoomType == 'MCM';
-
-    // 맥마흔인 경우 정렬 옵션에 따라 재정렬 및 순위 재계산
-    List<RankingEntry> displayRankings;
-    if (isMcMahon) {
-      final sortedRankings = List<RankingEntry>.from(sortRankings.rankings);
-      if (_mcMahonSortByScore) {
-        // 점수순: totalPoints 내림차순 > totalWins 내림차순
-        sortedRankings.sort((a, b) {
-          final scoreA = a.totalPoints ?? 0;
-          final scoreB = b.totalPoints ?? 0;
-          if (scoreA != scoreB) return scoreB.compareTo(scoreA);
-          return b.totalWins.compareTo(a.totalWins);
-        });
-      } else {
-        // 승수순: totalWins 내림차순 > totalPoints 내림차순
-        sortedRankings.sort((a, b) {
-          if (a.totalWins != b.totalWins) return b.totalWins.compareTo(a.totalWins);
-          final scoreA = a.totalPoints ?? 0;
-          final scoreB = b.totalPoints ?? 0;
-          return scoreB.compareTo(scoreA);
-        });
-      }
-      // 순위 재계산 (새 RankingEntry 생성)
-      displayRankings = sortedRankings.asMap().entries.map((entry) {
-        final newRank = entry.key + 1;
-        final original = entry.value;
-        return RankingEntry(
-          rank: newRank,
-          participantName: original.participantName,
-          participantNumber: original.participantNumber,
-          totalWins: original.totalWins,
-          sos: original.sos,
-          sosos: original.sosos,
-          totalPoints: original.totalPoints,
-        );
-      }).toList();
-    } else {
-      displayRankings = sortRankings.rankings;
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: displayRankings.length,
-      itemBuilder: (context, index) {
-        final ranking = displayRankings[index];
-        return _buildRankingCard(ranking, gameRoomType);
-      },
-    );
-  }
-
-  Widget _buildRankingCard(RankingEntry ranking, String? gameRoomType) {
-    final isTopThree = ranking.rank <= 3;
-    final medalIcon = _getMedalIcon(ranking.rank);
-    final medalColor = _getMedalColor(ranking.rank);
-    // 맥마흔: 'MCM' (백엔드에서 하드코딩)
-    final isMcMahon = gameRoomType == 'MCM';
-    // 스위스리그: '스위스리그', '단체전스위스리그', 또는 null (기본값)
-    final isSwiss = gameRoomType == null ||
-                    gameRoomType == '스위스리그' ||
-                    gameRoomType == '단체전스위스리그' ||
-                    gameRoomType == 'SWISS';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: isTopThree
-            ? Border.all(color: medalColor.withOpacity(0.5), width: 1.5)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            // 순위
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isTopThree
-                    ? medalColor.withOpacity(0.15)
-                    : AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: isTopThree
-                    ? Text(
-                        medalIcon,
-                        style: const TextStyle(fontSize: 22),
-                      )
-                    : Text(
-                        '${ranking.rank}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            // 이름
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    ranking.participantName,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: isTopThree ? FontWeight.w700 : FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      _buildStatChip('${ranking.totalWins}승'),
-                      // 맥마흔: 맥마흔 점수 표시, SOS/SOSOS 안 보임
-                      if (isMcMahon && ranking.totalPoints != null)
-                        _buildStatChip('${ranking.totalPoints!.toInt()}점'),
-                      // 스위스리그: SOS/SOSOS 표시
-                      if (isSwiss && ranking.sos != null)
-                        _buildStatChip('SOS ${ranking.sos!.toStringAsFixed(1)}'),
-                      if (isSwiss && ranking.sosos != null)
-                        _buildStatChip('SOSOS ${ranking.sosos!.toStringAsFixed(1)}'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primary,
-        ),
-      ),
-    );
-  }
-
-  /// 대진표 탭
-  Widget _buildPairingsTab(ContestDetail contest) {
-    final rankingsAsync = ref.watch(homepageRankingsProvider(widget.contestId));
-
-    return rankingsAsync.when(
-      data: (sortRankings) {
-        if (sortRankings.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.grid_view_outlined,
-            message: '대진표 데이터가 없습니다',
-          );
-        }
-        return _buildPairingsContent(sortRankings);
-      },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-      error: (error, _) => _buildEmptyState(
-        icon: Icons.grid_view_outlined,
-        message: '대진표를 불러올 수 없습니다',
-      ),
-    );
-  }
-
-  Widget _buildPairingsContent(List<SortRankings> sortRankings) {
-    if (_pairingSortIndex >= sortRankings.length) {
-      _pairingSortIndex = 0;
-    }
-    final currentSort = sortRankings[_pairingSortIndex];
-    final contestId = currentSort.contestId;
-    final sortId = currentSort.sortId;
-
-    if (contestId == null || sortId == null) {
-      return _buildEmptyState(
-        icon: Icons.grid_view_outlined,
-        message: '대진표 데이터가 없습니다',
-      );
-    }
-
-    final pairingsAsync = ref.watch(
-      pairingsProvider((contestId: contestId, sortId: sortId)),
-    );
-
-    return Column(
-      children: [
-        // 부문 선택 칩
-        if (sortRankings.length > 1)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border(
-                bottom: BorderSide(color: AppColors.divider),
-              ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: sortRankings.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final sort = entry.value;
-                  final isSelected = _pairingSortIndex == index;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(sort.sortName),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _pairingSortIndex = index;
-                            _selectedRound = 1;
-                          });
-                        }
-                      },
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surfaceVariant,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        // 대진표 내용
-        Expanded(
-          child: pairingsAsync.when(
-            data: (response) => _buildPairingsData(response),
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
-            error: (error, _) => _buildEmptyState(
-              icon: Icons.grid_view_outlined,
-              message: '대진표를 불러올 수 없습니다',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPairingsData(PairingsResponse response) {
-    if (response.pairings.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.grid_view_outlined,
-        message: '아직 대진표가 생성되지 않았습니다',
-      );
-    }
-
-    final maxRound = response.maxRound;
-    if (_selectedRound > maxRound) {
-      _selectedRound = maxRound > 0 ? maxRound : 1;
-    }
-
-    // 선택된 라운드의 대진 필터링
-    final roundPairings = response.pairings.where((p) {
-      final round = p['round'] ?? p['roundNumber'];
-      return round == _selectedRound;
-    }).toList();
-
-    return Column(
-      children: [
-        // 라운드 선택
-        if (maxRound > 0)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border(
-                bottom: BorderSide(color: AppColors.divider),
-              ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: List.generate(maxRound, (index) {
-                  final round = index + 1;
-                  final isSelected = _selectedRound == round;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ChoiceChip(
-                      label: Text('$round라운드'),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _selectedRound = round);
-                        }
-                      },
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surfaceVariant,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-        // 대진 목록
-        Expanded(
-          child: roundPairings.isEmpty
-              ? _buildEmptyState(
-                  icon: Icons.grid_view_outlined,
-                  message: '$_selectedRound라운드 대진표가 없습니다',
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: roundPairings.length,
-                  itemBuilder: (context, index) {
-                    return _buildPairingCard(roundPairings[index]);
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPairingCard(Map<String, dynamic> pairing) {
-    // 맥마흔: player1Name/player2Name, 스위스리그: player1/player2
-    // 단체전풀리그: team1Name/team2Name
-    final player1 = pairing['player1Name'] ?? pairing['player1'] ?? pairing['team1Name'] ?? '?';
-    final player2 = pairing['player2Name'] ?? pairing['player2'] ?? pairing['team2Name'] ?? '';
-    final player1Id = pairing['player1Id'] ?? pairing['team1Id'];
-    final player2Id = pairing['player2Id'] ?? pairing['team2Id'];
-    final tableNumber = pairing['tableNumber'] ?? pairing['matchNumber'] ?? pairing['player1Number'];
-    final isBye = pairing['isByeMatch'] == true ||
-        pairing['bye'] == true ||
-        pairing['none'] == true ||
-        player2.toString().isEmpty ||
-        player1.toString() == '부전승' || player2.toString() == '부전승';
-    // 맥마흔: winnerId로 판단, 스위스리그: end + winner(이름)로 판단
-    // 단체전풀리그: winnerTeamId로 판단
-    final winnerId = pairing['winnerId'] ?? pairing['winnerTeamId'];
-    final winnerName = pairing['winnerName'] ?? pairing['winner'];
-    final isCompleted = pairing['isCompleted'] == true ||
-        pairing['end'] == true ||
-        winnerId != null;
-
-    // 승자 판별: ID 기반(맥마흔/단체전풀리그) 또는 이름 기반(스위스리그)
-    bool player1Won = false;
-    bool player2Won = false;
-    if (winnerId != null) {
-      player1Won = winnerId == player1Id;
-      player2Won = winnerId == player2Id;
-    } else if (winnerName != null && isCompleted && !isBye) {
-      player1Won = winnerName == player1.toString();
-      player2Won = winnerName == player2.toString();
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            // 테이블 번호
-            if (tableNumber != null)
-              Container(
-                width: 36,
-                height: 36,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(
-                    '$tableNumber',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            // 선수1
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (player1Won)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text('승', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
-                        ),
-                      Flexible(
-                        child: Text(
-                          '$player1',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: player1Won ? FontWeight.w700 : FontWeight.w500,
-                            color: player1Won ? AppColors.textPrimary : AppColors.textPrimary,
-                          ),
-                          textAlign: TextAlign.end,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // VS
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                isBye ? 'BYE' : 'VS',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: isBye
-                      ? AppColors.textTertiary
-                      : isCompleted
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                ),
-              ),
-            ),
-            // 선수2
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          isBye ? '부전승' : '$player2',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: player2Won ? FontWeight.w700 : FontWeight.w500,
-                            color: isBye ? AppColors.textTertiary : AppColors.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (player2Won)
-                        Container(
-                          margin: const EdgeInsets.only(left: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text('승', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getMedalIcon(int rank) {
-    switch (rank) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return '';
-    }
-  }
-
-  Color _getMedalColor(int rank) {
-    switch (rank) {
-      case 1:
-        return const Color(0xFFFFD700); // Gold
-      case 2:
-        return const Color(0xFFC0C0C0); // Silver
-      case 3:
-        return const Color(0xFFCD7F32); // Bronze
-      default:
-        return AppColors.textTertiary;
-    }
   }
 }
 
