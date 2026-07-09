@@ -179,6 +179,10 @@ class _ContestRegistrationScreenState
       _showError('선택하신 부문은 접수가 마감되었습니다.');
       return;
     }
+    if (_selectedCategory!.isFull) {
+      _showError('선택하신 부문은 정원이 마감되었습니다.');
+      return;
+    }
     if (!_agreedPersonalInfo || !_agreedThirdParty) {
       _showError('필수 동의 항목에 모두 동의해주세요.');
       return;
@@ -746,11 +750,12 @@ class _ContestRegistrationScreenState
       child: Column(
         children: selectableCategories.map((category) {
           final isSelected = _selectedCategory?.id == category.id;
-          final closed = category.registrationClosed; // 운영자 강제마감(CLOSED) 또는 접수기간 종료
+          // 운영자 강제마감/기간종료(registrationClosed) 또는 정원 마감(isFull) → 선택 불가
+          final blocked = category.isBlocked;
           return GestureDetector(
-            onTap: closed ? null : () => setState(() => _selectedCategory = category),
+            onTap: blocked ? null : () => setState(() => _selectedCategory = category),
             child: Opacity(
-              opacity: closed ? 0.5 : 1.0,
+              opacity: blocked ? 0.5 : 1.0,
               child: Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(14),
@@ -814,36 +819,56 @@ class _ContestRegistrationScreenState
                             ),
                           ),
                         ],
-                        // 정원 및 현재 신청자 수 표시
-                        if (category.maxParticipants != null && category.maxParticipants! > 0) ...[
-                          const SizedBox(height: 4),
-                          Builder(builder: (context) {
-                            final current = category.currentParticipants ?? 0;
-                            final max = category.maxParticipants!;
+                        // 정원/잔여 표시 — showRemaining=false면 숫자 숨기고 문구만.
+                        //  실제 정원(maxParticipants) 초과 시엔 항상 '마감' 노출(하드캡 존재 시).
+                        Builder(builder: (context) {
+                          final max = category.maxParticipants;
+                          final current = category.currentParticipants ?? 0;
+                          final isFull = max != null && max > 0 && current >= max;
+                          final displayText = (category.participantsDisplayText ?? '').trim();
+
+                          IconData icon;
+                          String label;
+                          Color color;
+                          bool bold = false;
+                          if (isFull) {
+                            icon = Icons.person_off_outlined;
+                            label = '마감';
+                            color = AppColors.error;
+                            bold = true;
+                          } else if (!category.showRemaining) {
+                            // 잔여 숨김 → 커스텀 문구만. 문구 없으면 표시 안 함.
+                            if (displayText.isEmpty) return const SizedBox.shrink();
+                            icon = Icons.people_outline;
+                            label = displayText;
+                            color = AppColors.textTertiary;
+                          } else if (max != null && max > 0) {
                             final remaining = max - current;
-                            final isFull = remaining <= 0;
-                            return Row(
+                            icon = Icons.people_outline;
+                            label = '$current/$max명 (잔여 $remaining석)';
+                            color = AppColors.textTertiary;
+                          } else {
+                            // 무제한 + 잔여표시 → 표시 안 함 (기존 동작)
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
                               children: [
-                                Icon(
-                                  isFull ? Icons.person_off_outlined : Icons.people_outline,
-                                  size: 14,
-                                  color: isFull ? AppColors.error : AppColors.textTertiary,
-                                ),
+                                Icon(icon, size: 14, color: color),
                                 const SizedBox(width: 4),
                                 Text(
-                                  isFull
-                                      ? '마감 ($current/$max)'
-                                      : '$current/$max명 (잔여 $remaining석)',
+                                  label,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: isFull ? AppColors.error : AppColors.textTertiary,
-                                    fontWeight: isFull ? FontWeight.w600 : FontWeight.normal,
+                                    color: color,
+                                    fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
                                   ),
                                 ),
                               ],
-                            );
-                          }),
-                        ],
+                            ),
+                          );
+                        }),
                         if (category.registrationClosed) ...[
                           const SizedBox(height: 4),
                           Row(

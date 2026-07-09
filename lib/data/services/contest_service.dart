@@ -585,6 +585,7 @@ class ContestCategory {
   final bool registrationClosed;       // 부문 접수 마감 (운영자 강제마감 CLOSED 또는 접수기간 종료)
   final String? registrationOverride;  // "AUTO" / "OPEN" / "CLOSED"
   final String? groupName;     // 그룹명 (예: "금학산부", "유소년부") - 부문 묶음 표시용
+  final bool showRemaining;    // 잔여 자리 노출 여부 (false면 숫자 숨기고 participantsDisplayText 문구만)
 
   ContestCategory({
     required this.id,
@@ -606,6 +607,7 @@ class ContestCategory {
     this.registrationClosed = false,
     this.registrationOverride,
     this.groupName,
+    this.showRemaining = true,
   });
 
   factory ContestCategory.fromJson(Map<String, dynamic> json) {
@@ -629,6 +631,7 @@ class ContestCategory {
       registrationClosed: json['registrationClosed'] == true,
       registrationOverride: json['registrationOverride'],
       groupName: json['groupName'],
+      showRemaining: json['showRemaining'] != false, // 기본 true
     );
   }
 
@@ -651,6 +654,17 @@ class ContestCategory {
 
   /// 참가비가 있는지 확인
   bool get hasFee => fee != null && fee! > 0;
+
+  /// 정원 마감 여부 (숫자 정원 기준). maxParticipants가 없거나 0이면 무제한 → 마감 아님.
+  /// currentParticipants는 백엔드에서 APPROVED 기준(단체전은 팀 단위)으로 내려온다.
+  bool get isFull {
+    final max = maxParticipants;
+    if (max == null || max <= 0) return false;
+    return (currentParticipants ?? 0) >= max;
+  }
+
+  /// 신청 선택·제출 차단 여부 — 운영자 강제마감/기간종료(registrationClosed) 또는 정원 마감(isFull)
+  bool get isBlocked => registrationClosed || isFull;
 }
 
 /// 상금 정보
