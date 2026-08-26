@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +61,7 @@ class _ContestRegistrationScreenState
 
   // State
   ContestCategory? _selectedCategory;
+  String? _selectedGroupName; // 2단계 선택: 먼저 고른 부문(그룹). 부문 많을 때만 사용.
   bool _isForChild = false; // false: 본인 신청, true: 자녀 대리 신청
   String? _selectedRegion;
   String? _selectedSkillLevel;
@@ -67,14 +70,34 @@ class _ContestRegistrationScreenState
   bool _agreedToTerms = false;         // 기존 호환용
   bool _agreedPersonalInfo = false;    // [필수] 개인정보 수집·이용
   bool _agreedThirdParty = false;      // [필수] 대회 주최측 제3자 제공
+  // [필수] 카카오톡·SMS 수신 — 정보통신망법 §50에 따라 개인정보 동의와 분리해 받아야 한다.
+  // (콩그레스 웹은 받고 있었는데 앱만 빠져 있어 알림톡 발송 근거가 없었다)
+  bool _agreedReceive = false;
 
   // 결제·환불 정책 표시용 (PaymentInfoBox 입력)
   HomepageDetail? _homepageDetail;
 
-  // 추가 옵션(티셔츠 사이즈 등)
+  // 대회별 추가 항목(숙박·식사·기념품 등)
   List<Map<String, dynamic>> _optionDefs = [];
   List<Map<String, dynamic>> _optionPayload = [];
   bool _optionsValid = true;
+
+  // ===== 국제대회(콩그레스) 전용 =====
+  // 대회가 켜둔 경우에만 화면에 뜬다. 기존 대회는 플래그가 false라 아무 변화가 없다.
+  final _nameEnController = TextEditingController();
+  final _nameEnFocus = FocusNode();
+  /// 'PLAYER'(선수, 기본) | 'GUEST'(동반 — 대국 없이 숙박·식사만, 참가비 0)
+  String _role = 'PLAYER';
+
+  /// 국적 — 국제대회에서만 입력받는다. 기본값 대한민국.
+  /// 목록·저장값(한글 국가명)은 콩그레스 웹(placeholder.js NATIONS)과 동일하게 맞춘다.
+  String _nationality = '대한민국';
+  static const _nations = [
+    '대한민국', '중국', '일본', '미국', '대만', '독일', '프랑스', '영국', '러시아',
+    '캐나다', '호주', '베트남', '태국', '싱가포르', '네덜란드', '스웨덴',
+    '우크라이나', '헝가리', '폴란드', '기타',
+  ];
+  bool get _isGuest => _role == 'GUEST';
 
   // 기력 옵션
   final _skillLevels = [
@@ -96,16 +119,44 @@ class _ContestRegistrationScreenState
   @override
   void initState() {
     super.initState();
+    _autoSelectSoleCategory();
     _initFromUserProfile();
     _loadHomepageDetail();
     _loadOptions();
   }
 
-  /// 추가 옵션(티셔츠 사이즈 등) 정의 로드
+  /// 신청 가능한 부문이 하나뿐이면 미리 선택해 둔다.
+  ///
+  /// 위저드가 "부문 2개 이상일 때만" 선택 단계를 만들기 때문에, 자동 선택이 없으면
+  /// 단일 부문 대회(콩그레스 등)에서 부문을 고를 화면이 없어 영영 미선택 상태가 된다.
+  /// 단, 마감·정원초과된 부문은 자동 선택하지 않는다 — 왜 신청이 막히는지 보여줘야 하므로
+  /// 선택 단계를 그대로 노출한다(_steps 참조).
+  void _autoSelectSoleCategory() {
+    final selectable = widget.contest.categories.where((c) => !c.onsiteOnly).toList();
+    if (selectable.length == 1 && !selectable.first.isBlocked) {
+      _selectedCategory = selectable.first;
+    }
+  }
+
+  /// 대회별 추가 항목 정의 로드
+  /// 추가 항목 정의 로드.
+  ///
+  /// 옵션은 부문별로 다르게 정의할 수 있다(정의의 categoryId가 null이면 전 부문 공통).
+  /// 부문을 안 넘기면 다른 부문 전용 옵션까지 화면에 뜨고 그대로 과금되므로,
+  /// 선택된 부문 기준으로 다시 불러온다.
   Future<void> _loadOptions() async {
     try {
-      final defs = await _homepageService.getRegistrationOptions(widget.homepageId);
-      if (mounted) setState(() => _optionDefs = defs);
+      final defs = await _homepageService.getRegistrationOptions(
+        widget.homepageId,
+        categoryId: _selectedCategory?.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _optionDefs = defs;
+        // 부문이 바뀌면 이전 부문에서 고른 응답이 남아 잘못 과금될 수 있어 초기화한다.
+        _optionPayload = [];
+        _optionsValid = true;
+      });
     } catch (e) {
       debugPrint('[옵션 조회 실패] $e');
     }
@@ -122,12 +173,59 @@ class _ContestRegistrationScreenState
     }
   }
 
-  /// 사용자가 실제 결제할 금액 = 참가비 + (정책상 사용자가 부담하는 결제 PG 수수료)
+  /// 선택한 유료옵션 추가금액 합 (choice.extraFee × 수량).
+  /// 백엔드 calcExtraFeeFromPayload와 동일 공식 — 결제 금액 검증이 1원까지 맞아야 통과된다.
+  int _computeOptionFee() {
+    int total = 0;
+    for (final sel in _optionPayload) {
+      final key = sel['key'];
+      Map<String, dynamic>? def;
+      for (final d in _optionDefs) {
+        if (d['key'] == key) {
+          def = d;
+          break;
+        }
+      }
+      if (def == null) continue;
+      final type = (def['type'] ?? 'SINGLE_SELECT').toString();
+      if (type == 'TEXT' || type == 'NUMBER') continue; // 텍스트/숫자는 무료
+      final choices = (def['choices'] as List?) ?? [];
+      final quantities = sel['quantities'] as Map?;
+      for (final v in (sel['values'] as List? ?? [])) {
+        Map? choice;
+        for (final c in choices) {
+          if (c['value'].toString() == v.toString()) {
+            choice = c;
+            break;
+          }
+        }
+        if (choice == null || choice['extraFee'] == null) continue;
+        final fee = (choice['extraFee'] as num).toInt();
+        int qty = 1;
+        if (quantities != null && quantities[v] != null) {
+          qty = (quantities[v] as num).toInt();
+        }
+        if (qty < 1) qty = 1;
+        total += fee * qty;
+      }
+    }
+    return total;
+  }
+
+  /// 사용자가 실제 결제할 금액 = (참가비 + 유료옵션비) + (정책상 사용자가 부담하는 결제 PG 수수료)
+  /// 게스트(동반)는 참가비가 면제된다 — 백엔드 PaymentService가 role=GUEST를 보고
+  /// 참가비를 0으로 처리하므로(isGuestRegistration), 앱 표시도 같은 기준이어야
+  /// "화면엔 135,000원인데 실제 결제는 60,000원" 같은 불일치가 안 생긴다.
+  int get _effectiveBaseFee =>
+      _isGuest ? 0 : (_selectedCategory?.fee ?? 0);
+
   int _computeTotalPayAmount() {
-    final baseFee = _selectedCategory?.fee ?? 0;
-    if (baseFee <= 0) return 0;
-    final pgFee = _homepageDetail?.computeUserPaymentPgFee(baseFee) ?? 0;
-    return baseFee + pgFee;
+    final baseFee = _effectiveBaseFee;
+    final chargeBase = baseFee + _computeOptionFee(); // 참가비 + 옵션비 = 결제 기준액
+    if (chargeBase <= 0) return 0;
+    // PG수수료도 결제 기준액 위에 계산 (백엔드와 동일). 무료옵션이면 baseFee와 같아 기존과 동일.
+    final pgFee = _homepageDetail?.computeUserPaymentPgFee(chargeBase) ?? 0;
+    return chargeBase + pgFee;
   }
 
   void _initFromUserProfile() {
@@ -161,6 +259,8 @@ class _ContestRegistrationScreenState
     _passwordFocus.dispose();
     _childNameFocus.dispose();
     _childBirthYearFocus.dispose();
+    _nameEnController.dispose();
+    _nameEnFocus.dispose();
     super.dispose();
   }
 
@@ -183,12 +283,12 @@ class _ContestRegistrationScreenState
       _showError('선택하신 부문은 정원이 마감되었습니다.');
       return;
     }
-    if (!_agreedPersonalInfo || !_agreedThirdParty) {
+    if (!_agreedPersonalInfo || !_agreedThirdParty || !_agreedReceive) {
       _showError('필수 동의 항목에 모두 동의해주세요.');
       return;
     }
     if (!_optionsValid) {
-      _showError('필수 추가 항목(예: 티셔츠 사이즈)을 선택해주세요.');
+      _showError('필수 추가 항목을 선택해주세요.');
       return;
     }
 
@@ -215,6 +315,10 @@ class _ContestRegistrationScreenState
           club: _clubController.text.trim(),
           mobileUserId: mobileUserId,
           options: _optionPayload,
+          // 국제대회 필드 — 대회가 켠 경우에만 값이 채워진다(아니면 null → payload에서 제외).
+          nameEn: widget.contest.requireNameEn ? _nameEnController.text.trim() : null,
+          nationality: widget.contest.requireNameEn ? _nationality : null,
+          role: widget.contest.guestEnabled ? _role : null,
         );
       } else if (_isForChild) {
         // 자녀 대리 신청
@@ -232,6 +336,10 @@ class _ContestRegistrationScreenState
           parentPhone: _phoneController.text.trim(),
           mobileUserId: mobileUserId,
           options: _optionPayload,
+          // 국제대회 필드 — 대회가 켠 경우에만 값이 채워진다(아니면 null → payload에서 제외).
+          nameEn: widget.contest.requireNameEn ? _nameEnController.text.trim() : null,
+          nationality: widget.contest.requireNameEn ? _nationality : null,
+          role: widget.contest.guestEnabled ? _role : null,
         );
       } else {
         // 본인 신청 — type은 선택한 부문의 contestType을 그대로 따름
@@ -261,6 +369,10 @@ class _ContestRegistrationScreenState
           club: isChildSelf ? null : _clubController.text.trim(),
           mobileUserId: mobileUserId,
           options: _optionPayload,
+          // 국제대회 필드 — 대회가 켠 경우에만 값이 채워진다(아니면 null → payload에서 제외).
+          nameEn: widget.contest.requireNameEn ? _nameEnController.text.trim() : null,
+          nationality: widget.contest.requireNameEn ? _nationality : null,
+          role: widget.contest.guestEnabled ? _role : null,
         );
       }
 
@@ -324,6 +436,11 @@ class _ContestRegistrationScreenState
             'consentType': 'CONTEST_REGISTRATION',
             'consentItem': 'THIRD_PARTY_PROVISION',
             'consented': _agreedThirdParty,
+          },
+          {
+            'consentType': 'CONTEST_REGISTRATION',
+            'consentItem': 'MARKETING_RECEIVE',
+            'consented': _agreedReceive,
           },
         ],
         'deviceInfo': 'Flutter App',
@@ -581,103 +698,90 @@ class _ContestRegistrationScreenState
           key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 대회 정보
-              _buildContestInfo(),
-              const SizedBox(height: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildContestInfo(),
+                const SizedBox(height: 24),
 
-              // 참가 부문 선택
-              _buildCategorySelection(),
-              const SizedBox(height: 24),
+                // 단체(학원·클럽) 접수 — 앱에서 받지 않고 웹으로 안내
+                if (widget.contest.groupRegistrationEnabled) ...[
+                  _buildGroupRegistrationCard(),
+                  const SizedBox(height: 24),
+                ],
 
-              // 선택된 부문 안내 배너 (헷갈림 방지)
-              if (_selectedCategory != null) ...[
-                _buildSelectedCategoryBanner(),
-                const SizedBox(height: 16),
-              ],
+                _buildCategorySelection(),
+                const SizedBox(height: 24),
 
-              // 단체전 부문 선택 시: 모드 선택 카드 표시
-              if (_isTeamCategory) ...[
-                _buildTeamModeSelection(),
-              ] else if (_isPairSelfCategory) ...[
-                // 페어 자유조편성: 팀 신청 모드
-                _buildPairSelfModeSelection(),
-              ] else ...[
-                // 개인전 / 페어 랜덤조편성
-                if (_isPairOrganizerCategory) ...[
-                  _buildPairOrganizerInfo(),
+                if (_selectedCategory != null) ...[
+                  _buildSelectedCategoryBanner(),
                   const SizedBox(height: 16),
                 ],
-                // 신청 구분 토글: CHILD 부문일 때만 의미 있음 (페어는 본인 신청 강제)
-                // ADULT 부문엔 토글 숨기고 본인 신청만
-                if (!_isPairCategory && _isChildCategory) _buildTypeSelection(),
-                if (!_isPairCategory && _isChildCategory) const SizedBox(height: 24),
 
-                // 폼 분기 (부문 contestType 우선):
-                //  - CHILD 부문 + 자녀 대리 → 보호자 연락처 + 자녀 정보 (학교/학원/출생년도)
-                //  - CHILD 부문 + 본인 신청 → 본인 정보 + 학교/학원/출생년도
-                //  - ADULT 부문 → 본인 정보 (지역/클럽)
-                if (_isChildCategory && _isForChild) ...[
-                  _buildParentContactSection(),
-                  const SizedBox(height: 24),
-                  _buildChildInfoSection(),
+                if (_isTeamCategory) ...[
+                  _buildTeamModeSelection(),
+                ] else if (_isPairSelfCategory) ...[
+                  _buildPairSelfModeSelection(),
                 ] else ...[
-                  _buildSelfInfoSection(),
-                  if (_isChildCategory) ...[
+                  // 국제대회: 선수/동반 구분 (동반은 참가비 0 · 대국 없음)
+                  if (widget.contest.guestEnabled) ...[
+                    _buildRoleSelection(),
                     const SizedBox(height: 24),
-                    _buildSelfChildExtraSection(),
-                  ] else ...[
-                    // 성인/페어/단체 부문 — 부문에 birthInputType 설정이 있으면 출생 정보 입력 (기본 NONE = 안 받음)
-                    _buildAdultBirthSection(),
                   ],
-                ],
-                const SizedBox(height: 24),
+                  if (_isPairOrganizerCategory) ...[
+                    _buildPairOrganizerInfo(),
+                    const SizedBox(height: 16),
+                  ],
+                  if (!_isPairCategory && _isChildCategory) _buildTypeSelection(),
+                  if (!_isPairCategory && _isChildCategory) const SizedBox(height: 24),
 
-                // 비밀번호
-                _buildPasswordSection(),
-                const SizedBox(height: 24),
-
-                // 추가 선택 항목(티셔츠 사이즈 등) — 옵션이 있을 때만
-                if (_optionDefs.isNotEmpty) ...[
-                  _buildOptionSection(),
+                  if (_isChildCategory && _isForChild) ...[
+                    _buildParentContactSection(),
+                    const SizedBox(height: 24),
+                    _buildChildInfoSection(),
+                  ] else ...[
+                    _buildSelfInfoSection(),
+                    if (_isChildCategory) ...[
+                      const SizedBox(height: 24),
+                      _buildSelfChildExtraSection(),
+                    ] else ...[
+                      _buildAdultBirthSection(),
+                    ],
+                  ],
                   const SizedBox(height: 24),
-                ],
 
-                // 결제 안내 + 환불 정책 (부문 선택 후 + 유료 부문일 때만 PaymentInfoBox)
-                if (_selectedCategory != null
-                    && _selectedCategory!.hasFee
-                    && _homepageDetail != null) ...[
-                  PaymentInfoBox(
-                    homepage: _homepageDetail!,
-                    baseFee: _selectedCategory!.fee ?? 0,
-                  ),
+                  _buildPasswordSection(),
                   const SizedBox(height: 24),
-                ] else ...[
-                  // 부문 미선택 또는 무료 부문 — 환불 규정만 표시
-                  RefundPolicySection(
-                    homepageId: widget.homepageId,
-                  ),
-                  const SizedBox(height: 24),
+
+                  if (_optionDefs.isNotEmpty) ...[
+                    _buildOptionSection(),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_selectedCategory != null
+                      && _selectedCategory!.hasFee
+                      && _homepageDetail != null) ...[
+                    PaymentInfoBox(
+                      homepage: _homepageDetail!,
+                      baseFee: _effectiveBaseFee,
+                      optionFee: _computeOptionFee(),
+                    ),
+                    const SizedBox(height: 24),
+                  ] else ...[
+                    RefundPolicySection(homepageId: widget.homepageId),
+                    const SizedBox(height: 24),
+                  ],
+
+                  _buildAgreementSection(),
+                  const SizedBox(height: 32),
+
+                  _buildSubmitButton(),
                 ],
-
-                // 동의 체크박스
-                _buildAgreementSection(),
-                const SizedBox(height: 32),
-
-                // 주최자에게 문의(채팅) - 일단 비활성
-                // if (widget.contest.hasChatManager)
-                //   _buildInquiryButton(),
-
-                // 제출 버튼
-                _buildSubmitButton(),
+                const SizedBox(height: 40),
               ],
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -744,16 +848,95 @@ class _ContestRegistrationScreenState
     final selectableCategories = widget.contest.categories
         .where((c) => !c.onsiteOnly)
         .toList();
+    // 부문 많고(>12) 그룹 2개 이상이면 "부문 → 세부" 2단계, 아니면 기존 flat (다른 대회 영향 없음)
+    final groupNames = <String>[];
+    for (final c in selectableCategories) {
+      final g = (c.groupName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (g.isNotEmpty && !groupNames.contains(g)) groupNames.add(g);
+    }
+    final useTwoStep = selectableCategories.length > 12 && groupNames.length >= 2;
     return _buildSection(
       title: '참가 부문',
       required: true,
-      child: Column(
-        children: selectableCategories.map((category) {
+      child: useTwoStep
+          ? _buildTwoStepCategorySelection(selectableCategories, groupNames)
+          : Column(children: selectableCategories.map(_buildCategoryTile).toList()),
+    );
+  }
+
+  /// 2단계 부문 선택 (부문 많은 대회): 부문(그룹) 칩 → 선택 부문의 세부 카드
+  Widget _buildTwoStepCategorySelection(
+      List<ContestCategory> cats, List<String> groupNames) {
+    final filtered = cats
+        .where((c) =>
+            (c.groupName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim() ==
+            _selectedGroupName)
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1단계: 부문(그룹) 칩
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: groupNames.map((g) {
+            final sel = _selectedGroupName == g;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedGroupName = g),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: sel ? AppColors.primary : AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: sel ? AppColors.primary : AppColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  g,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: sel ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 14),
+        // 2단계: 선택한 부문의 세부(학년) 카드
+        if (_selectedGroupName == null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text('먼저 위에서 부문을 선택해주세요.',
+                  style:
+                      TextStyle(fontSize: 14, color: AppColors.textTertiary)),
+            ),
+          )
+        else
+          Column(children: filtered.map(_buildCategoryTile).toList()),
+      ],
+    );
+  }
+
+  /// 부문 카드 1개 (flat/2단계 공용) — 기존 인라인 타일을 함수화(출력 동일).
+  Widget _buildCategoryTile(ContestCategory category) {
           final isSelected = _selectedCategory?.id == category.id;
           // 운영자 강제마감/기간종료(registrationClosed) 또는 정원 마감(isFull) → 선택 불가
           final blocked = category.isBlocked;
           return GestureDetector(
-            onTap: blocked ? null : () => setState(() => _selectedCategory = category),
+            onTap: blocked
+                ? null
+                : () {
+                    if (_selectedCategory?.id == category.id) return;
+                    setState(() => _selectedCategory = category);
+                    // 부문마다 추가 항목이 다를 수 있으므로 다시 불러온다(응답도 초기화됨).
+                    _loadOptions();
+                  },
             child: Opacity(
               opacity: blocked ? 0.5 : 1.0,
               child: Container(
@@ -949,9 +1132,6 @@ class _ContestRegistrationScreenState
             ),
             ),
           );
-        }).toList(),
-      ),
-    );
   }
 
   /// 선택된 부문이 단체전인지 확인
@@ -1218,6 +1398,91 @@ class _ContestRegistrationScreenState
     );
   }
 
+  /// 선수 / 동반(GUEST) 구분 — guestEnabled 대회에서만 노출.
+  /// 동반은 대국을 두지 않고 숙박·식사만 이용하며 참가비가 0원이다.
+  /// (금액 0 처리·정원 제외는 백엔드 PaymentService가 role='GUEST'로 판단한다)
+  Widget _buildRoleSelection() {
+    Widget option({
+      required String value,
+      required String title,
+      required String desc,
+      required IconData icon,
+    }) {
+      final selected = _role == value;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => setState(() => _role = value),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.primary.withOpacity(0.08) : AppColors.surface,
+              border: Border.all(
+                color: selected ? AppColors.primary : AppColors.border,
+                width: selected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, size: 22,
+                    color: selected ? AppColors.primary : AppColors.textSecondary),
+                const SizedBox(height: 6),
+                Text(title, style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700,
+                  color: selected ? AppColors.primary : AppColors.textPrimary)),
+                const SizedBox(height: 3),
+                Text(desc, textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11, height: 1.3, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _buildSection(
+      title: '참가 구분',
+      required: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              option(
+                value: 'PLAYER',
+                title: '선수',
+                desc: '대국에 참가합니다',
+                icon: Icons.sports_esports_outlined,
+              ),
+              const SizedBox(width: 10),
+              option(
+                value: 'GUEST',
+                title: '동반',
+                desc: '대국 없이 숙박·식사만',
+                icon: Icons.person_outline,
+              ),
+            ],
+          ),
+          if (_isGuest) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '동반 참가는 참가비가 부과되지 않습니다.\n숙박·식사를 선택한 만큼만 결제됩니다.',
+                style: TextStyle(fontSize: 12, height: 1.5, color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildTypeSelection() {
     return _buildSection(
       title: '신청 구분',
@@ -1303,6 +1568,31 @@ class _ContestRegistrationScreenState
             required: true,
             validator: (v) => v?.isEmpty ?? true ? '이름을 입력하세요' : null,
           ),
+          // 국제대회: 영문명 (여권 표기 기준 — 명찰·대진표에 그대로 쓰인다)
+          if (widget.contest.requireNameEn) ...[
+            const SizedBox(height: 14),
+            _buildTextField(
+              controller: _nameEnController,
+              focusNode: _nameEnFocus,
+              label: '영문명',
+              hint: 'HONG GILDONG',
+              required: true,
+              validator: (v) {
+                final t = (v ?? '').trim();
+                if (t.isEmpty) return '영문명을 입력하세요';
+                if (!RegExp(r'^[A-Za-z .\-]+$').hasMatch(t)) return '영문(알파벳)으로 입력하세요';
+                return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            _buildDropdownField(
+              label: '국적',
+              required: true,
+              value: _nationality,
+              items: _nations,
+              onChanged: (v) => setState(() => _nationality = v ?? '대한민국'),
+            ),
+          ],
           const SizedBox(height: 14),
           _buildTextField(
             controller: _phoneController,
@@ -1314,9 +1604,12 @@ class _ContestRegistrationScreenState
             validator: (v) => v?.isEmpty ?? true ? '연락처를 입력하세요' : null,
           ),
           const SizedBox(height: 14),
+          // 게스트(동반)는 대국을 두지 않으므로 기력을 받지 않는다 — 웹과 동일 규칙
+          // (congress-web Registration.jsx: role==='GUEST'면 skillLevel 검증 skip).
+          // 필수로 두면 기력을 못 고르는 동반자가 신청 자체를 못 한다.
           _buildDropdownField(
-            label: '기력',
-            required: true,
+            label: _isGuest ? '기력 (선택)' : '기력',
+            required: !_isGuest,
             value: _selectedSkillLevel,
             items: _skillLevels,
             onChanged: (v) => setState(() => _selectedSkillLevel = v),
@@ -1659,23 +1952,164 @@ class _ContestRegistrationScreenState
     );
   }
 
-  /// 추가 선택 항목(티셔츠 사이즈 등)
+  /// 대회가 정의한 추가 항목(숙박·식사·기념품 등 — 대회마다 다름).
+  ///
+  /// 제목·설명을 특정 대회 기준으로 박아두면(예: "티셔츠 사이즈") 다른 대회에서 엉뚱해진다.
+  /// → 필수 항목 포함 여부만 보고 문구를 고른다.
   Widget _buildOptionSection() {
+    final hasRequired = _optionDefs.any((d) =>
+        d['required'] == true ||
+        ((d['choices'] as List?) ?? []).any((c) => c is Map && c['required'] == true));
     return _buildSection(
-      title: '추가 선택 항목',
-      subtitle: '티셔츠 사이즈 등 참가 시 선택해주세요',
+      title: hasRequired ? '추가 항목' : '추가 선택 항목',
+      subtitle: hasRequired
+          ? '필수 항목이 포함되어 있습니다'
+          : '필요한 항목을 선택해주세요',
       child: RegistrationOptionSelector(
         definitions: _optionDefs,
         onChanged: (payload, valid) {
-          _optionPayload = payload;
-          _optionsValid = valid;
+          // setState 없이 필드만 바꾸면 화면이 다시 그려지지 않아
+          // 유료 옵션(숙박·식사)을 골라도 결제 금액이 그대로 보인다.
+          // (옵션이 전부 무료이던 시절엔 금액이 안 변해서 드러나지 않던 버그)
+          if (!mounted) return;
+          setState(() {
+            _optionPayload = payload;
+            _optionsValid = valid;
+          });
         },
       ),
     );
   }
 
+  /// 단체 접수는 엑셀 명단 업로드가 핵심이라 앱에서 받지 않고 웹으로 보낸다.
+  /// 링크는 서버가 내려준 externalSiteUrl(별도 도메인 대회) 우선, 없으면 기본 홈페이지 경로.
+  String get _groupRegistrationUrl {
+    final ext = widget.contest.externalSiteUrl;
+    if (ext != null && ext.isNotEmpty) return ext;
+    return 'https://swissbaduk.org/homepage/${widget.homepageId}';
+  }
+
+  Widget _buildGroupRegistrationCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🏫', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                '학원·단체로 여러 명 신청',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '엑셀로 명단을 한 번에 올리고 합산 결제합니다.\n'
+            '방 배정 요청도 명단에서 함께 작성할 수 있습니다.\n'
+            '화면이 넓은 PC를 권장합니다.',
+            style: TextStyle(fontSize: 13, height: 1.55, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse(_groupRegistrationUrl);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('웹에서 진행'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  // PC에서 이어서 하려는 경우 — 카카오톡 '나에게 보내기' 등으로 링크를 옮긴다.
+                  // 앱이 직접 문자·알림톡을 쏘지 않는 이유: 발송비·번호입력·수신실패가 붙는데
+                  // 도착지(카톡)는 동일하기 때문.
+                  onPressed: () async {
+                    await Share.share(
+                      '[단체 접수] ${widget.contest.name}\n$_groupRegistrationUrl',
+                      subject: '단체 접수 링크',
+                    );
+                  },
+                  icon: const Icon(Icons.ios_share, size: 18),
+                  label: const Text('링크 공유'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "카카오톡 → '나에게 보내기'를 선택하면 PC 카카오톡에서 열 수 있습니다.",
+            style: TextStyle(fontSize: 11.5, height: 1.4, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _submitRegistration,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Text(
+                _selectedCategory?.hasFee == true
+                    ? '${_formatNumber(_computeTotalPayAmount())}원 결제하기'
+                    : '참가신청',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    );
+  }
+
   Widget _buildAgreementSection() {
-    final allAgreed = _agreedPersonalInfo && _agreedThirdParty;
+    final allAgreed = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1686,6 +2120,7 @@ class _ContestRegistrationScreenState
             setState(() {
               _agreedPersonalInfo = v ?? false;
               _agreedThirdParty = v ?? false;
+              _agreedReceive = v ?? false;
               _agreedToTerms = v ?? false;
             });
           },
@@ -1698,7 +2133,7 @@ class _ContestRegistrationScreenState
           value: _agreedPersonalInfo,
           onChanged: (v) => setState(() {
             _agreedPersonalInfo = v ?? false;
-            _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty;
+            _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
           }),
           title: '[필수] 개인정보 수집·이용 동의',
           subtitle: '이름, 연락처, 기력 등을 대회 운영 목적으로 수집합니다.',
@@ -1709,10 +2144,21 @@ class _ContestRegistrationScreenState
           value: _agreedThirdParty,
           onChanged: (v) => setState(() {
             _agreedThirdParty = v ?? false;
-            _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty;
+            _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
           }),
           title: '[필수] 대회 주최측 제3자 제공 동의',
           subtitle: '대회 운영을 위해 참가자 정보를 주최측에 제공합니다.',
+        ),
+        const SizedBox(height: 8),
+        // [필수] 카카오톡·SMS 수신 (정보통신망법 §50 — 개인정보 동의와 별도로 받아야 함)
+        _buildConsentCheckbox(
+          value: _agreedReceive,
+          onChanged: (v) => setState(() {
+            _agreedReceive = v ?? false;
+            _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
+          }),
+          title: '[필수] 카카오톡·SMS 수신 동의',
+          subtitle: '접수·결제·환불·일정 변경 안내를 알림톡 및 문자로 발송합니다.',
         ),
       ],
     );
@@ -1814,42 +2260,6 @@ class _ContestRegistrationScreenState
           padding: const EdgeInsets.symmetric(vertical: 14),
           minimumSize: const Size(double.infinity, 48),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _submitRegistration,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
-              )
-            : Text(
-                _selectedCategory?.hasFee == true
-                    ? '${_formatNumber(_computeTotalPayAmount())}원 결제하기'
-                    : '참가신청',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
       ),
     );
   }

@@ -31,6 +31,13 @@ class RegistrationData {
   // 추가 옵션(티셔츠 사이즈 등) 응답 — [{key, values:[...], text}]
   final List<Map<String, dynamic>>? options;
 
+  // 국제대회(콩그레스) 전용 — 대회가 켜둔 경우에만 채워진다.
+  final String? nameEn;       // 영문명 (requireNameEn 대회)
+  final String? nationality;  // 국적
+  /// 'PLAYER'(기본) 또는 'GUEST'(동반 — 참가비 0·대회 미참가, 숙박·식사만).
+  /// GUEST 처리는 백엔드 PaymentService가 담당한다(참가비 0·정원 제외).
+  final String? role;
+
   RegistrationData({
     required this.homepageId,
     required this.categoryId,
@@ -52,6 +59,9 @@ class RegistrationData {
     this.parentRegistrationId,
     this.mobileUserId,
     this.options,
+    this.nameEn,
+    this.nationality,
+    this.role,
   });
 
   Map<String, dynamic> toJson() {
@@ -65,6 +75,10 @@ class RegistrationData {
       'type': type,
       'registeredAt': DateTime.now().toIso8601String(),
       if (mobileUserId != null) 'mobileUserId': mobileUserId,
+      // 국제대회 전용 — 값이 있을 때만 보낸다(기존 대회 payload는 완전히 동일).
+      if (nameEn != null && nameEn!.trim().isNotEmpty) 'nameEn': nameEn!.trim(),
+      if (nationality != null && nationality!.trim().isNotEmpty) 'nationality': nationality!.trim(),
+      if (role != null && role!.isNotEmpty) 'role': role,
     };
 
     if (type == 'CHILD') {

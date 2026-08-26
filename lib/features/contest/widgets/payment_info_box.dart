@@ -8,20 +8,27 @@ import '../../../data/providers/payment_provider.dart';
 /// 이 위젯은 받은 응답을 '그리기만' 한다 → 정책/문구/기간 로직 변경은 백엔드만 수정(앱 리빌드 불필요).
 class PaymentInfoBox extends ConsumerWidget {
   final HomepageDetail homepage;
+  /// 참가비(부문 fee). 옵션비는 optionFee로 따로 받는다.
   final int baseFee;
+  /// 유료 추가 항목 합계(숙박·식사 등). 결제 기준액 = baseFee + optionFee.
+  /// 이 값을 서버 계산에 넣지 않으면 옵션을 골라도 총 결제 금액이 그대로 보인다.
+  final int optionFee;
   final String? footerHint;
 
   const PaymentInfoBox({
     super.key,
     required this.homepage,
     required this.baseFee,
+    this.optionFee = 0,
     this.footerHint,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final noticeAsync = ref.watch(
-      registrationNoticeProvider((homepageId: homepage.homepageId, baseFee: baseFee)),
+      registrationNoticeProvider(
+        (homepageId: homepage.homepageId, baseFee: baseFee + optionFee),
+      ),
     );
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -43,7 +50,7 @@ class PaymentInfoBox extends ConsumerWidget {
   }
 
   Widget _content(Map<String, dynamic> n) {
-    final totalAmount = _asInt(n['totalAmount']) ?? baseFee;
+    final totalAmount = _asInt(n['totalAmount']) ?? (baseFee + optionFee);
     final pgFeeAmount = _asInt(n['pgFeeAmount']) ?? 0;
     final rows = (n['policyRows'] as List?) ?? const [];
     final noticeLines = (n['noticeLines'] as List?) ?? const [];
@@ -54,6 +61,11 @@ class PaymentInfoBox extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _amountRow('참가비 합계', '${_fmt(baseFee)}원'),
+        if (optionFee > 0) ...[
+          const SizedBox(height: 6),
+          _amountRow('추가 항목', '+${_fmt(optionFee)}원',
+              subtext: '숙박·식사 등 선택하신 항목'),
+        ],
         if (pgFeeAmount > 0) ...[
           const SizedBox(height: 6),
           _amountRow('PG 수수료', '+${_fmt(pgFeeAmount)}원',

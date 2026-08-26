@@ -611,89 +611,9 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
       ),
       child: Column(
         children: [
-          // 일정
-          if (contest.schedule != null && contest.schedule!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.calendar_today_outlined,
-              label: '대회일정',
-              value: contest.schedule!,
-            ),
-          // 장소
-          if (contest.venue != null && contest.venue!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.location_on_outlined,
-              label: '장소',
-              value: contest.venue!,
-            ),
-          // 길찾기 버튼
-          if (contest.latitude != null && contest.longitude != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _openDirections(
-                    contest.latitude!, contest.longitude!, contest.venue ?? '',
-                  ),
-                  icon: const Icon(Icons.directions, size: 18),
-                  label: const Text('길찾기'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
-              ),
-            ),
-          // 주최/주관
-          if (contest.organizer != null && contest.organizer!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.business_outlined,
-              label: '주최/주관',
-              value: contest.organizer!,
-            ),
-          // 후원
-          if (contest.sponsor != null && contest.sponsor!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.handshake_outlined,
-              label: '후원',
-              value: contest.sponsor!,
-            ),
-          // 접수기간
-          if (contest.registrationPeriod != null &&
-              contest.registrationPeriod!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.event_available_outlined,
-              label: '접수기간',
-              value: contest.registrationPeriod!,
-            ),
-          // 참가비
-          if (contest.participationFee != null &&
-              contest.participationFee!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.payments_outlined,
-              label: '참가비',
-              value: contest.participationFee!,
-              valueColor: AppColors.primary,
-            ),
-          // 참가자격
-          if (contest.eligibility != null && contest.eligibility!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.verified_user_outlined,
-              label: '참가자격',
-              value: contest.eligibility!,
-            ),
-          // 문의처
-          if (contest.contactInfo != null && contest.contactInfo!.isNotEmpty)
-            _buildInfoItem(
-              icon: Icons.phone_outlined,
-              label: '문의처',
-              value: contest.contactInfo!,
-              isLast: !contest.hasChatManager,
-            ),
+          // 안내 정보는 서버(HomepageInfoRows)가 순서·라벨·표시여부까지 정해서 내려준다.
+          // 여기서는 받은 순서대로 그리기만 한다 — 항목이 추가돼도 앱 수정/재배포 불필요.
+          ..._buildInfoRowWidgets(contest),
           // 채팅으로 문의 버튼 - 일단 비활성
           // if (contest.hasChatManager)
           //   Padding(
@@ -858,6 +778,91 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
       await launchUrl(kakaoMapUrl);
     } else {
       await launchUrl(naverWebUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  /// 서버가 내려준 안내 정보 행들을 순서대로 위젯으로 변환.
+  /// 장소 행 뒤에는 길찾기 버튼을 끼워 넣는다(좌표가 있을 때만).
+  List<Widget> _buildInfoRowWidgets(ContestDetail contest) {
+    final rows = contest.infoRows;
+    final widgets = <Widget>[];
+
+    for (int i = 0; i < rows.length; i++) {
+      final row = rows[i];
+      final isLastRow = i == rows.length - 1;
+      final hasDirections = row.key == 'venue' &&
+          contest.latitude != null &&
+          contest.longitude != null;
+
+      widgets.add(_buildInfoItem(
+        icon: _infoRowIcon(row.key),
+        label: row.label,
+        value: row.value,
+        // 참가비는 기존과 동일하게 강조색 유지
+        valueColor: row.key == 'participationFee' ? AppColors.primary : null,
+        // 길찾기 버튼이 뒤에 붙으면 구분선을 남겨둔다
+        isLast: isLastRow && !hasDirections,
+      ));
+
+      if (hasDirections) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _openDirections(
+                contest.latitude!,
+                contest.longitude!,
+                contest.venue ?? '',
+              ),
+              icon: const Icon(Icons.directions, size: 18),
+              label: const Text('길찾기'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ));
+      }
+    }
+
+    return widgets;
+  }
+
+  /// 안내 항목 의미 키 → 아이콘.
+  /// 서버가 Flutter 아이콘 코드를 보내면 서버가 앱에 묶이므로 매핑은 앱이 갖는다.
+  /// 모르는 키(=서버에 새로 추가된 항목)는 기본 아이콘으로 그려지므로 앱 수정 없이 표시된다.
+  IconData _infoRowIcon(String key) {
+    switch (key) {
+      case 'organizer':
+        return Icons.business_outlined;
+      case 'sponsor':
+        return Icons.handshake_outlined;
+      case 'cooperation':
+        return Icons.groups_outlined;
+      case 'financialSupport':
+        return Icons.account_balance_outlined;
+      case 'eligibility':
+        return Icons.verified_user_outlined;
+      case 'participationFee':
+        return Icons.payments_outlined;
+      case 'schedule':
+        return Icons.calendar_today_outlined;
+      case 'venue':
+        return Icons.location_on_outlined;
+      case 'registrationPeriod':
+        return Icons.event_available_outlined;
+      case 'contactInfo':
+        return Icons.phone_outlined;
+      case 'additionalInfo':
+        return Icons.info_outline;
+      default:
+        return Icons.info_outline;
     }
   }
 

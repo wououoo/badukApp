@@ -404,6 +404,30 @@ class ContestPageResponse {
   bool get hasMore => currentPage < totalPages - 1;
 }
 
+/// 대회 안내 정보 한 줄 (주최·주관 / 후원 / 재정후원 / 참가자격 …)
+///
+/// 순서·라벨·표시 여부는 전부 서버(HomepageInfoRows.java)가 정한다.
+/// 앱은 받은 순서대로 그리기만 하므로, 안내 항목이 늘어나도 앱 재배포가 필요 없다.
+class ContestInfoRow {
+  final String key;    // 의미 키 (organizer, financialSupport …) — 아이콘 매핑용
+  final String label;  // 화면 표시 라벨
+  final String value;  // 표시할 값
+
+  const ContestInfoRow({
+    required this.key,
+    required this.label,
+    required this.value,
+  });
+
+  factory ContestInfoRow.fromJson(Map<String, dynamic> json) {
+    return ContestInfoRow(
+      key: json['key']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      value: json['value']?.toString() ?? '',
+    );
+  }
+}
+
 /// 대회 상세 정보 (ContestHomepage 기반)
 class ContestDetail {
   final int id;
@@ -445,6 +469,24 @@ class ContestDetail {
   final double? latitude;
   final double? longitude;
 
+  /// 동반(GUEST) 참가 구분을 노출할지 — 국제대회(콩그레스)에서만 true.
+  /// true면 신청 화면에 '선수 / 동반' 선택이 뜬다(동반=참가비 0·정원 제외).
+  final bool guestEnabled;
+
+  /// 영문명(nameEn) 필수 입력 여부 — 국제대회에서만 true.
+  final bool requireNameEn;
+
+  /// 단체(학원·클럽) 접수를 운영하는 대회인지. 앱은 접수를 직접 받지 않고
+  /// "웹에서 진행" 안내 카드를 띄운다(엑셀 명단 업로드가 필요해 PC가 적합).
+  final bool groupRegistrationEnabled;
+
+  /// 별도 도메인으로 운영하는 대회의 사이트 주소(콩그레스 등). null이면 기본 경로 사용.
+  final String? externalSiteUrl;
+
+  /// 안내 정보 표시행 — 서버가 순서·라벨까지 정해서 내려준다.
+  /// 구버전 서버(이 키가 없는 경우)에선 기존 개별 필드로 조립한 값이 들어간다.
+  final List<ContestInfoRow> infoRows;
+
   ContestDetail({
     required this.id,
     required this.name,
@@ -474,6 +516,11 @@ class ContestDetail {
     this.address,
     this.latitude,
     this.longitude,
+    this.infoRows = const [],
+    this.guestEnabled = false,
+    this.requireNameEn = false,
+    this.groupRegistrationEnabled = false,
+    this.externalSiteUrl,
   });
 
   /// 첫 번째 문의 담당자 ID
@@ -532,7 +579,70 @@ class ContestDetail {
       address: json['address'],
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      infoRows: _parseInfoRows(json),
+      guestEnabled: json['guestEnabled'] == true,
+      requireNameEn: json['requireNameEn'] == true,
+      groupRegistrationEnabled: json['groupRegistrationEnabled'] == true,
+      externalSiteUrl: (json['externalSiteUrl'] as String?)?.trim().isEmpty == false
+          ? json['externalSiteUrl'] as String
+          : null,
     );
+  }
+
+  /// 안내 정보 행 파싱.
+  /// 서버가 infoRows를 주면 그대로 쓰고, 없으면(구버전 서버) 기존 개별 필드로 조립한다.
+  /// → 신버전 앱 ↔ 구버전 서버 조합에서도 화면이 비지 않는다.
+  static List<ContestInfoRow> _parseInfoRows(Map<String, dynamic> json) {
+    final raw = json['infoRows'];
+    if (raw is List && raw.isNotEmpty) {
+      final rows = <ContestInfoRow>[];
+      for (final item in raw) {
+        if (item is Map<String, dynamic>) {
+          final row = ContestInfoRow.fromJson(item);
+          if (row.label.isNotEmpty && row.value.isNotEmpty) {
+            rows.add(row);
+          }
+        }
+      }
+      if (rows.isNotEmpty) return rows;
+    }
+    return _legacyInfoRows(json);
+  }
+
+  /// 구버전 서버 fallback — 서버 HomepageInfoRows와 같은 순서·라벨로 조립
+  static List<ContestInfoRow> _legacyInfoRows(Map<String, dynamic> json) {
+    final venueText = _joinVenue(json['venue'], json['address']);
+    final candidates = <List<String?>>[
+      ['organizer', '주최·주관', json['organizer']?.toString()],
+      ['sponsor', '후원', json['sponsor']?.toString()],
+      ['cooperation', '협력', json['cooperation']?.toString()],
+      ['financialSupport', '재정후원', json['financialSupport']?.toString()],
+      ['eligibility', '참가자격', json['eligibility']?.toString()],
+      ['participationFee', '참가비', json['participationFee']?.toString()],
+      ['schedule', '대회 일정', json['schedule']?.toString()],
+      ['venue', '대회 장소', venueText],
+      ['registrationPeriod', '접수 기간', json['registrationPeriod']?.toString()],
+      ['contactInfo', '문의처', json['contactInfo']?.toString()],
+      ['additionalInfo', '기타 안내', json['additionalInfo']?.toString()],
+    ];
+
+    final rows = <ContestInfoRow>[];
+    for (final c in candidates) {
+      final value = c[2];
+      if (value != null && value.trim().isNotEmpty) {
+        rows.add(ContestInfoRow(key: c[0]!, label: c[1]!, value: value.trim()));
+      }
+    }
+    return rows;
+  }
+
+  static String? _joinVenue(dynamic venue, dynamic address) {
+    final v = venue?.toString().trim() ?? '';
+    final a = address?.toString().trim() ?? '';
+    if (v.isNotEmpty && a.isNotEmpty) return '$v  ·  $a';
+    if (v.isNotEmpty) return v;
+    if (a.isNotEmpty) return a;
+    return null;
   }
 
   static List<int> _parseIdList(dynamic value) {
