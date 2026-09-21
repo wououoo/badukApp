@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/config/ui_flags.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/live_contest.dart';
 import '../../../data/services/live_contest_service.dart';
 import '../widgets/live_de_content.dart';
 import '../widgets/live_sort_content.dart';
+import '../widgets/live_sort_content_v2.dart';
 
 /// 라이브 대회 상세 화면
 ///
@@ -198,14 +200,14 @@ class _LiveContestScreenState extends State<LiveContestScreen> {
           if (contest.fullLocation.isNotEmpty) ...[
             Row(
               children: [
-                Icon(Icons.location_on, size: 16, color: AppColors.textSecondary.withOpacity(0.7)),
+                Icon(Icons.location_on, size: 16, color: AppColors.textSecondary.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     contest.fullLocation,
                     style: TextStyle(
                       fontSize: 15,
-                      color: AppColors.textSecondary.withOpacity(0.8),
+                      color: AppColors.textSecondary.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
@@ -216,7 +218,7 @@ class _LiveContestScreenState extends State<LiveContestScreen> {
           if (contest.startDate != null)
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary.withOpacity(0.7)),
+                Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
                 Text(
                   contest.endDate != null && contest.startDate != contest.endDate
@@ -224,7 +226,7 @@ class _LiveContestScreenState extends State<LiveContestScreen> {
                       : dateFormat.format(contest.startDate!),
                   style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -290,6 +292,16 @@ class _LiveContestScreenState extends State<LiveContestScreen> {
     }
 
     // 비-DE 부문: 순위표/대진표 콘텐츠 위젯에 위임
+    // 개편본과 원본을 ui_flags.dart의 useV2 한 줄로 갈아끼운다.
+    if (UiFlags.useV2) {
+      return LiveSortContentV2(
+        key: ValueKey('sort-v2-$contestId-${_selectedSort!.id}'),
+        contestId: contestId,
+        sortId: _selectedSort!.id,
+        contestType: _selectedSort!.contestType,
+        autoRefresh: _autoRefreshEnabled,
+      );
+    }
     return LiveSortContent(
       key: ValueKey('sort-$contestId-${_selectedSort!.id}'),
       contestId: contestId,

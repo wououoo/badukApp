@@ -100,13 +100,14 @@ class _ClubRankingsScreenState extends State<ClubRankingsScreen> with SingleTick
             expand: false,
             builder: (context, scrollController) {
               return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                // 시트 맨 아래가 제스처 바에 겹치지 않도록 시스템 여백만큼 띄운다.
+                padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom),
                 child: Column(
                   children: [
                     Container(
                       width: 40, height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.textTertiary.withOpacity(0.3),
+                        color: AppColors.textTertiary.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -188,8 +189,8 @@ class _ClubRankingsScreenState extends State<ClubRankingsScreen> with SingleTick
                 color: isBye
                     ? AppColors.background
                     : isPositive
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.error.withOpacity(0.1),
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
@@ -222,7 +223,7 @@ class _ClubRankingsScreenState extends State<ClubRankingsScreen> with SingleTick
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: _getResultColor(resultStr).withOpacity(0.1),
+                color: _getResultColor(resultStr).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -243,13 +244,13 @@ class _ClubRankingsScreenState extends State<ClubRankingsScreen> with SingleTick
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: TextStyle(fontSize: 11, color: color.withOpacity(0.8))),
+          Text(label, style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.8))),
         ],
       ),
     );

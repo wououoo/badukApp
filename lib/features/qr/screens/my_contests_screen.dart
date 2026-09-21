@@ -124,7 +124,7 @@ class MyContestsScreen extends ConsumerWidget {
             Icon(
               Icons.event_busy,
               size: 80,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -166,7 +166,7 @@ class MyContestsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: contest.checkedIn
-              ? AppColors.success.withOpacity(0.3)
+              ? AppColors.success.withValues(alpha: 0.3)
               : AppColors.border,
         ),
       ),
@@ -200,7 +200,7 @@ class MyContestsScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
+                        color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Row(
@@ -229,7 +229,7 @@ class MyContestsScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -266,7 +266,7 @@ class MyContestsScreen extends ConsumerWidget {
               // 날짜 + 현재 라운드 정보
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary.withOpacity(0.7)),
+                  Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary.withValues(alpha: 0.7)),
                   const SizedBox(width: 4),
                   Text(
                     contest.startDate != null
@@ -276,7 +276,7 @@ class MyContestsScreen extends ConsumerWidget {
                         : '-',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary.withOpacity(0.8),
+                      color: AppColors.textSecondary.withValues(alpha: 0.8),
                     ),
                   ),
                   const Spacer(),
@@ -314,9 +314,9 @@ class MyContestsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.1),
+                    color: AppColors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +376,7 @@ class MyContestsScreen extends ConsumerWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: anyCheckedIn ? AppColors.success.withOpacity(0.3) : AppColors.border,
+          color: anyCheckedIn ? AppColors.success.withValues(alpha: 0.3) : AppColors.border,
         ),
       ),
       color: AppColors.surface,
@@ -409,7 +409,7 @@ class MyContestsScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
+                        color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Row(
@@ -436,7 +436,7 @@ class MyContestsScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -448,7 +448,7 @@ class MyContestsScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.textSecondary.withOpacity(0.08),
+                        color: AppColors.textSecondary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -463,7 +463,7 @@ class MyContestsScreen extends ConsumerWidget {
               // 날짜 + 현재 라운드
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary.withOpacity(0.7)),
+                  Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary.withValues(alpha: 0.7)),
                   const SizedBox(width: 4),
                   Text(
                     primary.startDate != null
@@ -471,7 +471,7 @@ class MyContestsScreen extends ConsumerWidget {
                             ? '${dateFormat.format(primary.startDate!)} ~ ${dateFormat.format(primary.endDate!)}'
                             : dateFormat.format(primary.startDate!))
                         : '-',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withOpacity(0.8)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withValues(alpha: 0.8)),
                   ),
                   const Spacer(),
                   if (active.currentRound > 0) ...[
@@ -521,7 +521,7 @@ class MyContestsScreen extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withOpacity(0.3),
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -593,7 +593,7 @@ class MyContestsScreen extends ConsumerWidget {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               alignment: Alignment.center,

@@ -150,7 +150,7 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.08),
+                        color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -294,7 +294,7 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _agreeAll ? AppColors.primary.withOpacity(0.08) : AppColors.surface,
+          color: _agreeAll ? AppColors.primary.withValues(alpha: 0.08) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _agreeAll ? AppColors.primary : AppColors.border,

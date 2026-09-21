@@ -8,7 +8,9 @@ import '../../../data/providers/auth_provider.dart';
 import '../../../data/services/location_service.dart';
 import '../widgets/contest_card.dart';
 import '../widgets/contest_poster_card.dart';
+import '../widgets/contest_wide_card.dart';
 import '../widgets/contest_filter_chips.dart';
+import '../widgets/contest_scope_filter.dart';
 import '../../../core/widgets/shimmer_loading.dart';
 
 /// 대회 목록 화면 (런너블 스타일)
@@ -21,6 +23,10 @@ class ContestListScreen extends ConsumerStatefulWidget {
 
 class _ContestListScreenState extends ConsumerState<ContestListScreen> {
   String _selectedFilter = 'ALL';
+  /// 기간 필터 — null이면 전체 기간
+  DateTime? _selectedMonth;
+  /// 지역 필터 — null이면 전국. 값은 서버가 내려주는 표준 시·도명
+  String? _selectedProvince;
   String _searchQuery = '';
   bool _posterMode = true;
   final _searchController = TextEditingController();
@@ -62,6 +68,9 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
             // 필터 칩 + 뷰 모드 토글
             const SizedBox(height: 12),
             _buildFilterRow(),
+            // 기간·지역 필터 (상태 칩과 달리 클라이언트에서 걸러 서버 왕복이 없다)
+            const SizedBox(height: 8),
+            _buildScopeFilter(),
             const SizedBox(height: 16),
             // 대회 목록
             Expanded(
@@ -159,6 +168,23 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
     );
   }
 
+  /// 기간·지역 필터 바.
+  /// '내 근처'는 위치 기반 별도 목록이라 이 필터를 겹쳐 걸지 않는다(기준이 둘이면 결과를 설명할 수 없다).
+  Widget _buildScopeFilter() {
+    if (_selectedFilter == 'NEARBY') return const SizedBox.shrink();
+
+    final state = ref.watch(contestListProvider);
+    if (state.contests.isEmpty) return const SizedBox.shrink();
+
+    return ContestScopeFilter(
+      contests: state.contests,
+      selectedMonth: _selectedMonth,
+      selectedProvince: _selectedProvince,
+      onMonthChanged: (m) => setState(() => _selectedMonth = m),
+      onProvinceChanged: (p) => setState(() => _selectedProvince = p),
+    );
+  }
+
   /// 필터 칩 + 뷰모드 토글 버튼
   Widget _buildFilterRow() {
     return Padding(
@@ -193,7 +219,7 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: _posterMode
-                      ? AppColors.primary.withOpacity(0.1)
+                      ? AppColors.primary.withValues(alpha: 0.1)
                       : AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
@@ -371,13 +397,26 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
       return _buildEmptyState();
     }
 
-    // 검색어로 필터링
-    final filtered = _searchQuery.isEmpty
+    // 검색어 → 기간·지역 순으로 좁힌다
+    var filtered = _searchQuery.isEmpty
         ? state.contests
         : state.contests.where((c) =>
             c.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    filtered = ContestScopeFilter.apply(
+      filtered,
+      month: _selectedMonth,
+      province: _selectedProvince,
+    );
 
     if (filtered.isEmpty) {
+      // 왜 비었는지에 따라 안내가 달라야 한다 — 검색어 때문인지, 기간·지역 때문인지.
+      final hasScope = _selectedMonth != null || _selectedProvince != null;
+      final scopeText = [
+        if (_selectedMonth != null) ContestScopeFilter.monthLabel(_selectedMonth!),
+        if (_selectedProvince != null)
+          ContestScopeFilter.shortName(_selectedProvince!),
+      ].join(' · ');
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -385,9 +424,26 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
             Icon(Icons.search_off, size: 48, color: AppColors.textTertiary),
             const SizedBox(height: 12),
             Text(
-              "'$_searchQuery' 검색 결과가 없습니다",
+              _searchQuery.isNotEmpty
+                  ? "'$_searchQuery' 검색 결과가 없습니다"
+                  : hasScope
+                      ? '$scopeText에 열리는 대회가 없습니다'
+                      : '표시할 대회가 없습니다',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
             ),
+            if (hasScope) ...[
+              const SizedBox(height: 14),
+              TextButton.icon(
+                onPressed: () => setState(() {
+                  _selectedMonth = null;
+                  _selectedProvince = null;
+                }),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('기간·지역 조건 지우기'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              ),
+            ],
           ],
         ),
       );
@@ -402,20 +458,16 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
     );
   }
 
-  /// 기본 정보 모드 (기존 2열 카드)
+  /// 정보 모드 — 한 줄에 하나씩 넓게.
+  /// 2열에서는 대회명이 잘리고 날짜·지역·참가비가 좁은 폭에 눌렸다.
+  /// 고르는 판단에 필요한 셋(언제·어디서·얼마)을 한 카드에서 다 읽히게 한다.
   Widget _buildInfoGrid(List<Contest> contests) {
-    return GridView.builder(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
-      ),
       itemCount: contests.length,
       itemBuilder: (context, index) {
         final contest = contests[index];
-        return ContestCard(
+        return ContestWideCard(
           contest: contest,
           onTap: () => context.push('/contest/${contest.id}'),
         );

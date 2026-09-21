@@ -95,7 +95,7 @@ class _MyClubsScreenState extends State<MyClubsScreen> {
           decoration: BoxDecoration(
             color: AppColors.clubBgTint,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.clubPrimary.withOpacity(0.2)),
+            border: Border.all(color: AppColors.clubPrimary.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
@@ -106,7 +106,7 @@ class _MyClubsScreenState extends State<MyClubsScreen> {
                 style: TextStyle(fontSize: 15, color: AppColors.clubPrimary, fontWeight: FontWeight.w500),
               ),
               const Spacer(),
-              Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.clubPrimary.withOpacity(0.5)),
+              Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.clubPrimary.withValues(alpha: 0.5)),
             ],
           ),
         ),
@@ -128,7 +128,7 @@ class _MyClubsScreenState extends State<MyClubsScreen> {
                 color: AppColors.clubBgTint,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.groups_outlined, size: 52, color: AppColors.clubPrimary.withOpacity(0.5)),
+              child: Icon(Icons.groups_outlined, size: 52, color: AppColors.clubPrimary.withValues(alpha: 0.5)),
             ),
             const SizedBox(height: 24),
             Text(
@@ -228,7 +228,7 @@ class _MyClubsScreenState extends State<MyClubsScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: AppColors.clubPrimary.withOpacity(0.1),
+                              color: AppColors.clubPrimary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.groups, color: AppColors.clubPrimary, size: 22),
@@ -290,7 +290,7 @@ class _MyClubsScreenState extends State<MyClubsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isOwner ? AppColors.clubPrimary.withOpacity(0.1) : AppColors.statusOpenBg,
+        color: isOwner ? AppColors.clubPrimary.withValues(alpha: 0.1) : AppColors.statusOpenBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

@@ -130,7 +130,7 @@ class _ClubPostsScreenState extends State<ClubPostsScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.clubBgTint,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.clubPrimary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.clubPrimary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -194,8 +194,8 @@ class _ClubPostsScreenState extends State<ClubPostsScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: post.isNotice
-                                ? AppColors.error.withOpacity(0.1)
-                                : AppColors.clubPrimary.withOpacity(0.1),
+                                ? AppColors.error.withValues(alpha: 0.1)
+                                : AppColors.clubPrimary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

@@ -108,7 +108,7 @@ class _ContestCalendarScreenState extends ConsumerState<ContestCalendarScreen> {
             },
             calendarStyle: CalendarStyle(
               todayDecoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               selectedDecoration: const BoxDecoration(
@@ -248,7 +248,7 @@ class _ContestCalendarScreenState extends ConsumerState<ContestCalendarScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(iconData, color: color, size: 22),

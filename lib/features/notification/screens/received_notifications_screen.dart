@@ -163,12 +163,12 @@ class _ReceivedNotificationsScreenState
         side: BorderSide(
           color: notification.isRead
               ? AppColors.border
-              : AppColors.accentLight.withOpacity(0.3),
+              : AppColors.accentLight.withValues(alpha: 0.3),
         ),
       ),
       color: notification.isRead
           ? AppColors.surface
-          : AppColors.accentLight.withOpacity(0.03),
+          : AppColors.accentLight.withValues(alpha: 0.03),
       child: InkWell(
         onTap: () {
           if (!notification.isRead) {

@@ -26,7 +26,7 @@ class _IdentityVerificationScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
         ref.read(authProvider.notifier).clearError();
@@ -60,7 +60,7 @@ class _IdentityVerificationScreenState
               const SizedBox(height: 16),
               Text(
                 '대회 참가를 위해 본인인증이 필요합니다.\n카카오 계정을 통해 간편하게 인증해주세요.',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
@@ -114,7 +114,7 @@ class _IdentityVerificationScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -139,10 +139,10 @@ class _IdentityVerificationScreenState
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
+        Icon(icon, size: 18, color: AppColors.textSecondary),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+          child: Text(text, style: TextStyle(fontSize: 13, color: AppColors.textTertiary)),
         ),
       ],
     );

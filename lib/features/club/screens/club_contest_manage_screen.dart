@@ -748,7 +748,7 @@ class _ClubContestManageScreenState extends State<ClubContestManageScreen> {
         if (_isFinished)
           Container(
             width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 8),
-            color: AppColors.success.withOpacity(0.1),
+            color: AppColors.success.withValues(alpha: 0.1),
             child: Text(_isRated ? '대회 종료됨 (레이팅 반영 완료)' : '대회 종료됨 (친선 대회)', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.success)),
           ),
         if (_sections.length > 1) _buildSectionSelector(),
@@ -758,7 +758,7 @@ class _ClubContestManageScreenState extends State<ClubContestManageScreen> {
           child: Row(children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: _currentType == '풀리그' ? Colors.orange.withOpacity(0.1) : AppColors.clubPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(color: _currentType == '풀리그' ? Colors.orange.withValues(alpha: 0.1) : AppColors.clubPrimary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
               child: Text(_currentType, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _currentType == '풀리그' ? Colors.orange : AppColors.clubPrimary)),
             ),
             const SizedBox(width: 8),

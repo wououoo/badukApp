@@ -349,7 +349,7 @@ class _OnSiteRegistrationModalState extends ConsumerState<OnSiteRegistrationModa
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: enabled ? AppColors.surfaceVariant : AppColors.border.withOpacity(0.3),
+        color: enabled ? AppColors.surfaceVariant : AppColors.border.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(10),
       ),
       child: DropdownButtonHideUnderline(

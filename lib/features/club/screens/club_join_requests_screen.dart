@@ -153,7 +153,7 @@ class _ClubJoinRequestsScreenState extends State<ClubJoinRequestsScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppColors.clubPrimary.withOpacity(0.1),
+                  backgroundColor: AppColors.clubPrimary.withValues(alpha: 0.1),
                   child: Text(
                     (request.userName ?? '?')[0],
                     style: const TextStyle(

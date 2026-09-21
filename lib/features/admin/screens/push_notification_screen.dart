@@ -369,7 +369,7 @@ class _PushNotificationScreenState extends ConsumerState<PushNotificationScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.divider,
@@ -460,7 +460,7 @@ class _PushNotificationScreenState extends ConsumerState<PushNotificationScreen>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : AppColors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
@@ -559,7 +559,7 @@ class _PushNotificationScreenState extends ConsumerState<PushNotificationScreen>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.notifications, color: AppColors.primary),

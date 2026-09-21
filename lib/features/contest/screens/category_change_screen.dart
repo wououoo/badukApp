@@ -470,7 +470,7 @@ class _CategoryChangeScreenState extends ConsumerState<CategoryChangeScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.surface,
+                color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected ? AppColors.primary : AppColors.border,
@@ -608,7 +608,7 @@ class _CategoryChangeScreenState extends ConsumerState<CategoryChangeScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -627,7 +627,7 @@ class _CategoryChangeScreenState extends ConsumerState<CategoryChangeScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: _previewRow('추가 결제 금액', '₩${_formatNumber(additionalAmount > 0 ? additionalAmount : difference)}',

@@ -260,7 +260,7 @@ class _LiveContestListScreenState extends State<LiveContestListScreen> {
           children: [
             const SizedBox(height: 120),
             Icon(Icons.live_tv_outlined,
-                size: 56, color: AppColors.textSecondary.withOpacity(0.4)),
+                size: 56, color: AppColors.textSecondary.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Center(
               child: Text('진행 중인 라이브 대회가 없습니다',

@@ -132,8 +132,8 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
             CircleAvatar(
               radius: 24,
               backgroundColor: room.isStaff
-                  ? Colors.blue.withOpacity(0.1)
-                  : AppColors.primary.withOpacity(0.1),
+                  ? Colors.blue.withValues(alpha: 0.1)
+                  : AppColors.primary.withValues(alpha: 0.1),
               child: Icon(
                 room.isStaff ? Icons.person : Icons.support_agent,
                 color: room.isStaff ? Colors.blue : AppColors.primary,

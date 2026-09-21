@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// 기력 레벨 선택 위젯 (동호인용)
 ///
@@ -136,7 +137,7 @@ class _LevelSelectorState extends State<LevelSelector> {
           _isSelected ? _getLevelDescription() : '기력을 선택하면 대진표 배정에 반영됩니다',
           style: TextStyle(
             fontSize: 13,
-            color: Colors.grey[600],
+            color: AppColors.textSecondary,
           ),
         ),
       ],
@@ -154,15 +155,15 @@ class _LevelSelectorState extends State<LevelSelector> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: enabled ? Colors.grey[300]! : Colors.grey[200]!),
-        borderRadius: BorderRadius.circular(8),
-        color: enabled ? null : Colors.grey[50],
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+        color: enabled ? AppColors.surface : AppColors.surfaceVariant,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: effectiveValue,
           isExpanded: true,
-          hint: Text(hint, style: TextStyle(color: Colors.grey[500])),
+          hint: Text(hint, style: TextStyle(color: AppColors.textHint)),
           items: items.map((item) {
             return DropdownMenuItem<String>(
               value: item,

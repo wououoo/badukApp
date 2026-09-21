@@ -154,7 +154,7 @@ class _ClubParticipantSelectScreenState extends State<ClubParticipantSelectScree
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, -2)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, -2)),
                 ],
               ),
               child: SafeArea(
@@ -209,9 +209,9 @@ class _ClubParticipantSelectScreenState extends State<ClubParticipantSelectScree
             : BorderSide.none,
       ),
       color: isDisabled
-          ? AppColors.background.withOpacity(0.5)
+          ? AppColors.background.withValues(alpha: 0.5)
           : isSelected
-              ? AppColors.clubPrimary.withOpacity(0.05)
+              ? AppColors.clubPrimary.withValues(alpha: 0.05)
               : AppColors.surface,
       child: InkWell(
         onTap: isDisabled ? null : () => _toggleMember(member.userId),
@@ -246,7 +246,7 @@ class _ClubParticipantSelectScreenState extends State<ClubParticipantSelectScree
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppColors.textTertiary.withOpacity(0.1),
+                              color: AppColors.textTertiary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -260,7 +260,7 @@ class _ClubParticipantSelectScreenState extends State<ClubParticipantSelectScree
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
+                              color: Colors.orange.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Text(
@@ -283,7 +283,7 @@ class _ClubParticipantSelectScreenState extends State<ClubParticipantSelectScree
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
-                    color: AppColors.clubPrimary.withOpacity(0.1),
+                    color: AppColors.clubPrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(

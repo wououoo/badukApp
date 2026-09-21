@@ -190,7 +190,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         final now = DateTime.now();
         if (_lastBackPressed != null &&
@@ -220,7 +220,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
             color: AppColors.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),
@@ -302,7 +302,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
           vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1C1C1E).withOpacity(0.08) : Colors.transparent,
+          color: isSelected ? const Color(0xFF1C1C1E).withValues(alpha: 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -348,7 +348,7 @@ class _MainScreenState extends ConsumerState<MainScreen> with WidgetsBindingObse
           vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1C1C1E).withOpacity(0.08) : Colors.transparent,
+          color: isSelected ? const Color(0xFF1C1C1E).withValues(alpha: 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

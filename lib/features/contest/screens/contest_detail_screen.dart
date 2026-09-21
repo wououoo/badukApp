@@ -80,7 +80,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
       icon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.9),
+          color: AppColors.surface.withValues(alpha: 0.9),
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -359,7 +359,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.surface.withOpacity(0.9),
+            color: AppColors.surface.withValues(alpha: 0.9),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.arrow_back, size: 20),
@@ -373,7 +373,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.9),
+              color: AppColors.surface.withValues(alpha: 0.9),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.share_outlined, size: 20),
@@ -384,7 +384,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.9),
+              color: AppColors.surface.withValues(alpha: 0.9),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.language, size: 20),
@@ -406,7 +406,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
               ),
@@ -445,7 +445,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
                       contest.subtitle!,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -603,7 +603,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -626,7 +626,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
           //         label: const Text('채팅으로 문의'),
           //         style: OutlinedButton.styleFrom(
           //           foregroundColor: AppColors.primary,
-          //           side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+          //           side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
           //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           //           padding: const EdgeInsets.symmetric(vertical: 12),
           //         ),
@@ -819,7 +819,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               label: const Text('길찾기'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -889,7 +889,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 20, color: AppColors.primary),
@@ -934,7 +934,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1050,7 +1050,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1226,7 +1226,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1300,7 +1300,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -1537,7 +1537,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -1638,7 +1638,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
           // 헤더 행
           TableRow(
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
             ),
             children: allColumns.map((col) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1758,7 +1758,7 @@ class _ContestDetailScreenState extends ConsumerState<ContestDetailScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -1928,7 +1928,7 @@ class _BadukBoardHeroPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
+      ..color = Colors.white.withValues(alpha: 0.08)
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
@@ -1956,7 +1956,7 @@ class _BadukBoardHeroPainter extends CustomPainter {
 
     // 화점 (Star points)
     final dotPaint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+      ..color = Colors.white.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
 
     final starPoints = [

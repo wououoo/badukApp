@@ -129,8 +129,8 @@ class _AdminRequestsScreenState extends ConsumerState<AdminRequestsScreen> {
         setState(() => _selectedStatus = status);
         ref.invalidate(adminContestRequestsProvider(status));
       },
-      selectedColor: highlight ? Colors.orange.withOpacity(0.3) : AppColors.primary.withOpacity(0.2),
-      backgroundColor: highlight ? Colors.orange.withOpacity(0.1) : null,
+      selectedColor: highlight ? Colors.orange.withValues(alpha: 0.3) : AppColors.primary.withValues(alpha: 0.2),
+      backgroundColor: highlight ? Colors.orange.withValues(alpha: 0.1) : null,
       checkmarkColor: highlight ? Colors.orange : AppColors.primary,
       labelStyle: TextStyle(
         color: isSelected
@@ -298,7 +298,7 @@ class _RequestCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

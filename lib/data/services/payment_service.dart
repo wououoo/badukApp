@@ -68,6 +68,31 @@ class PaymentService {
     throw AppException.server(message: data['message'] ?? '결제 확인에 실패했습니다');
   }
 
+  /// 추가결제 준비 — 이미 신청한 건에 유료옵션(방 추가 등)을 더 산다.
+  /// POST /api/payment/addon/prepare
+  /// 별도 Payment(isAddon)가 생기며, 금액 = 옵션값 + 결제수수료(서버가 확정).
+  /// confirm은 기존 /api/payment/confirm이 isAddon을 알아서 라우팅하므로 따로 부르지 않는다.
+  Future<Payment> prepareAddonPayment({
+    required int registrationId,
+    required List<Map<String, dynamic>> options,
+    String? addonReason,
+  }) async {
+    final response = await _apiClient.post(
+      '${ApiConstants.payment}/addon/prepare',
+      data: {
+        'registrationId': registrationId,
+        'options': options,
+        if (addonReason != null && addonReason.isNotEmpty) 'addonReason': addonReason,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return Payment.fromJson(data['data']);
+    }
+    throw AppException.server(message: data['message'] ?? '추가결제 준비에 실패했습니다');
+  }
+
   /// 결제 상태 조회 - orderId 기반 (결제 복구용)
   /// GET /api/payment/order/{orderId}
   Future<Payment?> getPaymentByOrderId(String orderId) async {

@@ -186,7 +186,7 @@ class _FaqTileState extends State<_FaqTile> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withOpacity(0.1),
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

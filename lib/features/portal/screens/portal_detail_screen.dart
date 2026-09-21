@@ -154,7 +154,7 @@ class _PortalDetailScreenState extends ConsumerState<PortalDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -182,7 +182,7 @@ class _PortalDetailScreenState extends ConsumerState<PortalDetailScreen> {
                     if (p.contestType != null)
                       _buildBadge(
                         t('contestType_${p.contestType}'),
-                        AppColors.primaryLight.withOpacity(0.1),
+                        AppColors.primaryLight.withValues(alpha: 0.1),
                         AppColors.primaryLight,
                       ),
                   ],
@@ -349,7 +349,7 @@ class _PortalDetailScreenState extends ConsumerState<PortalDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor?.withOpacity(0.1),
+                color: statusColor?.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(

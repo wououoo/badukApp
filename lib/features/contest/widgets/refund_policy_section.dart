@@ -51,9 +51,9 @@ class RefundPolicySection extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.statusSoon.withOpacity(0.3), width: 1),
+        border: Border.all(color: AppColors.statusSoon.withValues(alpha: 0.3), width: 1),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -169,7 +169,7 @@ class RefundPolicySection extends ConsumerWidget {
             margin: const EdgeInsets.only(top: 2),
             width: 28,
             height: 28,
-            decoration: BoxDecoration(color: rateColor.withOpacity(0.12), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: rateColor.withValues(alpha: 0.12), shape: BoxShape.circle),
             child: Center(
               child: Text('D-$days',
                   style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: rateColor)),
@@ -192,7 +192,7 @@ class RefundPolicySection extends ConsumerWidget {
           Container(
             margin: const EdgeInsets.only(top: 2),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: rateColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: rateColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
             child: Text('$rate%',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: rateColor)),
           ),

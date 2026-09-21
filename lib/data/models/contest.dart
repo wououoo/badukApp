@@ -32,6 +32,11 @@ class Contest {
   final double? latitude;
   final double? longitude;
 
+  /// 시·도 (예: '강원특별자치도') — 지역 필터용. 서버가 주소에서 뽑아 표준 명칭으로 내려준다.
+  /// 값 체계는 RegionData.provinces와 동일해 회원 지역과 그대로 비교할 수 있다.
+  /// 카드에 짧게 표시하는 [region] getter와는 별개다(그쪽은 표시용, 이쪽은 필터용).
+  final String? province;
+
   Contest({
     required this.id,
     required this.name,
@@ -60,6 +65,7 @@ class Contest {
     this.address,
     this.latitude,
     this.longitude,
+    this.province,
   });
 
   factory Contest.fromJson(Map<String, dynamic> json) {
@@ -98,6 +104,7 @@ class Contest {
       address: json['address'],
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      province: json['region'],
     );
   }
 

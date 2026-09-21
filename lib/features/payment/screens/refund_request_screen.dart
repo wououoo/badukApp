@@ -81,7 +81,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             color: AppColors.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),
@@ -98,7 +98,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.textTertiary.withOpacity(0.3),
+                  disabledBackgroundColor: AppColors.textTertiary.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -176,7 +176,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -403,9 +403,9 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.08),
+                color: AppColors.success.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -432,7 +432,7 @@ class _RefundRequestScreenState extends ConsumerState<RefundRequestScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

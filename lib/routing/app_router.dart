@@ -4,10 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../features/chat/screens/chat_list_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
+import '../core/config/ui_flags.dart';
 import '../features/home/screens/home_screen.dart';
+import '../features/home/screens/home_screen_v2.dart';
 import '../features/contest/screens/contest_list_screen.dart';
+import '../features/contest/screens/contest_list_screen_v2.dart';
 import '../features/contest/screens/contest_detail_screen.dart';
+import '../features/contest/screens/contest_detail_screen_v2.dart';
 import '../features/contest/screens/contest_registration_screen.dart';
+import '../features/contest/screens/contest_registration_screen_v2.dart';
 import '../features/contest/screens/team_bulk_registration_screen.dart';
 import '../features/contest/screens/team_join_screen.dart';
 import '../features/contest/screens/contest_homepage_webview.dart';
@@ -15,9 +20,12 @@ import '../features/contest/screens/contest_photo_view_screen.dart';
 import '../data/models/contest_photo.dart';
 import '../features/history/screens/history_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/profile/screens/profile_screen_v2.dart';
 import '../features/profile/screens/profile_edit_screen.dart';
 import '../features/profile/screens/my_registrations_screen.dart';
+import '../features/profile/screens/my_registrations_screen_v2.dart';
 import '../features/settings/screens/settings_screen.dart';
+import '../features/settings/screens/settings_screen_v2.dart';
 import '../features/settings/screens/change_phone_screen.dart';
 import '../features/settings/screens/terms_screen.dart';
 import '../features/settings/screens/privacy_screen.dart';
@@ -44,11 +52,16 @@ import '../features/qr/screens/my_contest_detail_screen.dart';
 import '../features/qr/screens/qr_scanner_screen.dart';
 import '../features/live/screens/live_contest_screen.dart';
 import '../features/live/screens/live_contest_list_screen.dart';
+import '../features/live/screens/live_contest_list_screen_v2.dart';
 import '../features/payment/screens/payment_screen.dart';
+import '../features/payment/screens/payment_screen_v2.dart';
 import '../features/payment/screens/payment_success_screen.dart';
+import '../features/payment/screens/payment_success_screen_v2.dart';
 import '../features/payment/screens/payment_result_screen.dart';
 import '../features/payment/screens/toss_checkout_screen.dart';
+import '../features/payment/screens/addon_payment_screen.dart';
 import '../features/payment/screens/refund_request_screen.dart';
+import '../features/payment/screens/refund_request_screen_v2.dart';
 import '../features/contest/screens/refund_policy_page.dart';
 import '../features/admin/screens/host_applications_screen.dart';
 import '../features/host/screens/host_apply_screen.dart';
@@ -62,6 +75,7 @@ import '../data/models/portal/portal_participant.dart';
 import '../data/models/payment.dart';
 import '../data/models/registration.dart';
 import '../features/profile/screens/registration_edit_screen.dart';
+import '../features/profile/screens/registration_edit_screen_v2.dart';
 import '../features/club/screens/my_clubs_screen.dart';
 import '../features/club/screens/club_explore_screen.dart';
 import '../features/club/screens/club_create_screen.dart';
@@ -245,10 +259,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainScreen(child: child),
         routes: [
           // 홈 탭
+          // 홈 — 개편본과 원본을 UiFlags로 갈아끼운다 (ui_flags.dart의 useV2 한 줄).
           GoRoute(
             path: '/home',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: UiFlags.useV2 ? const HomeScreenV2() : const HomeScreen(),
             ),
           ),
 
@@ -256,7 +271,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/contests',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ContestListScreen(),
+              child: UiFlags.useV2 ? const ContestListScreenV2() : const ContestListScreen(),
             ),
           ),
 
@@ -280,7 +295,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProfileScreen(),
+              child: UiFlags.useV2 ? const ProfileScreenV2() : const ProfileScreen(),
             ),
           ),
         ],
@@ -303,7 +318,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 내 참가신청 내역 (전체 화면)
       GoRoute(
         path: '/profile/registrations',
-        builder: (context, state) => const MyRegistrationsScreen(),
+        builder: (context, state) => UiFlags.useV2
+            ? const MyRegistrationsScreenV2()
+            : const MyRegistrationsScreen(),
       ),
 
       // 대회 기록 (전체 화면 - 내정보에서 진입)
@@ -341,7 +358,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/contest/:id',
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-          return ContestDetailScreen(contestId: id);
+          return UiFlags.useV2
+              ? ContestDetailScreenV2(contestId: id)
+              : ContestDetailScreen(contestId: id);
         },
       ),
 
@@ -372,10 +391,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               body: Center(child: Text('대회 정보를 불러올 수 없습니다.')),
             );
           }
-          return ContestRegistrationScreen(
-            homepageId: id,
-            contest: contest,
-          );
+          return UiFlags.useV2
+              ? ContestRegistrationScreenV2(homepageId: id, contest: contest)
+              : ContestRegistrationScreen(homepageId: id, contest: contest);
         },
       ),
 
@@ -459,7 +477,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 설정 (전체 화면)
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
+        builder: (context, state) =>
+            UiFlags.useV2 ? const SettingsScreenV2() : const SettingsScreen(),
       ),
 
       // 이용약관 (전체 화면)
@@ -558,7 +577,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 라이브 대회 목록 (네이티브 내장 — 홈 '라이브' 진입)
       GoRoute(
         path: '/live',
-        builder: (context, state) => const LiveContestListScreen(),
+        builder: (context, state) => UiFlags.useV2
+            ? const LiveContestListScreenV2()
+            : const LiveContestListScreen(),
       ),
 
       // 라이브 대회 화면 (전체 화면)
@@ -607,6 +628,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               body: Center(child: Text('결제 정보를 불러올 수 없습니다.')),
             );
           }
+          if (UiFlags.useV2) {
+            return PaymentScreenV2(
+              registration: extra['registration'],
+              existingRegistrationId: extra['registrationId'] as int?,
+              participantName: extra['participantName'] as String,
+              categoryName: extra['categoryName'] as String,
+              contestName: extra['contestName'] as String,
+              amount: extra['amount'] as int,
+              homepageId: extra['homepageId'] as int?,
+              contestStartDate: extra['contestStartDate'] as DateTime?,
+            );
+          }
           return PaymentScreen(
             registration: extra['registration'],  // RegistrationData 객체 (신규 신청 시)
             existingRegistrationId: extra['registrationId'] as int?,  // 기존 참가신청 (미결제 재시도 시)
@@ -616,6 +649,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             amount: extra['amount'] as int,
             homepageId: extra['homepageId'] as int?,
             contestStartDate: extra['contestStartDate'] as DateTime?,
+          );
+        },
+      ),
+
+      // 항목 추가결제 (이미 신청한 건에 숙박 등 유료 항목만 더 결제)
+      GoRoute(
+        path: '/payment/addon',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return AddonPaymentScreen(
+            registrationId: extra['registrationId'] as int,
+            homepageId: extra['homepageId'] as int,
+            categoryId: extra['categoryId'] as int?,
+            contestName: (extra['contestName'] as String?) ?? '',
           );
         },
       ),
@@ -644,7 +691,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               body: Center(child: Text('결제 정보를 불러올 수 없습니다.')),
             );
           }
-          return PaymentSuccessScreen(payment: payment);
+          return UiFlags.useV2
+              ? PaymentSuccessScreenV2(payment: payment)
+              : PaymentSuccessScreen(payment: payment);
         },
       ),
 
@@ -668,7 +717,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final registrationId = int.tryParse(state.pathParameters['registrationId'] ?? '') ?? 0;
           final extra = state.extra as Map<String, dynamic>?;
-          return RegistrationEditScreen(registrationId: registrationId, currentData: extra);
+          return UiFlags.useV2
+              ? RegistrationEditScreenV2(registrationId: registrationId, currentData: extra)
+              : RegistrationEditScreen(registrationId: registrationId, currentData: extra);
         },
       ),
 
@@ -693,7 +744,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/refund/:registrationId',
         builder: (context, state) {
           final registrationId = int.tryParse(state.pathParameters['registrationId'] ?? '') ?? 0;
-          return RefundRequestScreen(registrationId: registrationId);
+          return UiFlags.useV2
+              ? RefundRequestScreenV2(registrationId: registrationId)
+              : RefundRequestScreen(registrationId: registrationId);
         },
       ),
 

@@ -5,7 +5,6 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/banner_carousel.dart';
 import '../../../core/widgets/icon_grid_menu.dart';
-import '../../../core/widgets/horizontal_tab_menu.dart';
 import '../../../data/models/contest.dart';
 import '../../../data/models/qr/my_contest.dart';
 import '../../../data/models/qr/match_preview.dart';
@@ -49,27 +48,6 @@ class HomeScreen extends ConsumerWidget {
               // 앱바 (로고 + 알림벨 + 프로필아바타)
               SliverToBoxAdapter(
                 child: _buildAppBar(context, userName),
-              ),
-              // 수평 탭 메뉴
-              SliverToBoxAdapter(
-                child: HorizontalTabMenu(
-                  tabs: HorizontalTabMenu.defaultTabs(),
-                  selectedIndex: 0,
-                  onTabSelected: (index) {
-                    final tabs = HorizontalTabMenu.defaultTabs();
-                    if (index < tabs.length && tabs[index].routePath != null) {
-                      final tab = tabs[index];
-                      final path = tab.routePath!;
-                      if (path != '/home') {
-                        if (tab.isShellRoute) {
-                          context.go(path);
-                        } else {
-                          context.push(path);
-                        }
-                      }
-                    }
-                  },
-                ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
               // 배너 캐러셀
@@ -267,7 +245,7 @@ class HomeScreen extends ConsumerWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -338,20 +316,14 @@ class HomeScreen extends ConsumerWidget {
   }
 
   /// 아이콘 메뉴 아이템 (대회 홈페이지, 라이브 현황 포함)
+  /// 홈 빠른 실행 — 하단 탭·앱바에서 못 가는 것만 남긴다.
+  ///
+  /// 대회·클럽은 하단 탭에, 알림은 앱바 종 아이콘에, 더보기(고객센터)는 내정보에 이미 있다.
+  /// 같은 곳으로 가는 길이 셋씩 있으면 무엇을 눌러야 할지 고르는 일만 늘어난다.
+  /// QR체크인은 대회장 포스터를 찍는 용도라, 이미 로그인해 자기 대회를 아는 앱 사용자에겐 쓸 일이 드물다
+  /// (필요하면 대회 상세에서 그대로 들어갈 수 있다).
   List<IconMenuItem> _buildIconMenuItems(BuildContext context, WidgetRef ref) {
     return [
-      const IconMenuItem(
-        icon: Icons.emoji_events_outlined,
-        label: '대회',
-        color: Color(0xFFD4603C),
-        routePath: '/contests',
-      ),
-      IconMenuItem(
-        icon: Icons.language,
-        label: '대회홈페이지',
-        color: const Color(0xFF3B82F6),
-        onTap: () => _showHomepageSelector(context, ref),
-      ),
       const IconMenuItem(
         icon: Icons.how_to_reg,
         label: '신청내역',
@@ -364,20 +336,8 @@ class HomeScreen extends ConsumerWidget {
         color: Color(0xFF3B82F6),
         routePath: '/history',
       ),
-      const IconMenuItem(
-        icon: Icons.qr_code_scanner,
-        label: 'QR체크인',
-        color: Color(0xFF10B981),
-        routePath: '/qr/scan',
-      ),
-      const IconMenuItem(
-        icon: Icons.groups_outlined,
-        label: '클럽',
-        color: Color(0xFFF59E0B),
-        routePath: '/clubs-tab',
-      ),
       IconMenuItem(
-        icon: Icons.live_tv,
+        icon: Icons.sensors,
         label: '라이브',
         color: const Color(0xFFEF4444),
         onTap: () => _openLivePage(context),
@@ -385,20 +345,8 @@ class HomeScreen extends ConsumerWidget {
       IconMenuItem(
         icon: Icons.favorite_outline,
         label: '즐겨찾기',
-        color: const Color(0xFFEC4899),
+        color: const Color(0xFFF59E0B),
         onTap: () => _showFavoritesSheet(context, ref),
-      ),
-      const IconMenuItem(
-        icon: Icons.notifications_outlined,
-        label: '알림',
-        color: Color(0xFF6366F1),
-        routePath: '/notifications',
-      ),
-      const IconMenuItem(
-        icon: Icons.more_horiz,
-        label: '더보기',
-        color: Color(0xFF8B5CF6),
-        routePath: '/support',
       ),
     ];
   }
@@ -424,7 +372,7 @@ class HomeScreen extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
@@ -545,7 +493,7 @@ class HomeScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -577,7 +525,7 @@ class HomeScreen extends ConsumerWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.75)],
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.75)],
               ),
             ),
           ),
@@ -628,7 +576,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 2),
               Text(
                 '${contest.totalParticipants ?? 0}명 참가',
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
               ),
             ],
           ),
@@ -760,7 +708,7 @@ class HomeScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -773,7 +721,7 @@ class HomeScreen extends ConsumerWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -982,7 +930,7 @@ class HomeScreen extends ConsumerWidget {
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color: AppColors.primary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: const Icon(
@@ -1288,7 +1236,7 @@ class HomeScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1511,10 +1459,10 @@ class HomeScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.error.withOpacity(0.2)),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -1640,7 +1588,7 @@ class HomeScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -1731,7 +1679,7 @@ class HomeScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.1),
+                  color: Colors.teal.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -1753,7 +1701,7 @@ class HomeScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.1),
+                  color: Colors.teal.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1822,10 +1770,10 @@ class HomeScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.teal.withOpacity(0.3)),
+          border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
-              color: Colors.teal.withOpacity(0.08),
+              color: Colors.teal.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -1838,7 +1786,7 @@ class HomeScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.teal.withOpacity(0.05),
+                color: Colors.teal.withValues(alpha: 0.05),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               ),
               child: Column(
@@ -1966,7 +1914,7 @@ class HomeScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: won ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                    color: won ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -2007,10 +1955,10 @@ class HomeScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -2023,7 +1971,7 @@ class HomeScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               ),
               child: Row(
@@ -2118,9 +2066,9 @@ class HomeScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(top: 6),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.04),
+        color: AppColors.primary.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withOpacity(0.08)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2453,7 +2401,7 @@ class HomeScreen extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary.withOpacity(0.7),
+                      color: AppColors.primary.withValues(alpha: 0.7),
                     ),
                   ),
                 if (contest.boardNumber != null)

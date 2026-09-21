@@ -386,7 +386,7 @@ class _LiveSortContentState extends State<LiveSortContent>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: isDeleted ? AppColors.textSecondary.withOpacity(0.2) : AppColors.border,
+          color: isDeleted ? AppColors.textSecondary.withValues(alpha: 0.2) : AppColors.border,
         ),
       ),
       child: Padding(
@@ -421,7 +421,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                           margin: const EdgeInsets.only(left: 4),
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppColors.textSecondary.withOpacity(0.2),
+                            color: AppColors.textSecondary.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -436,7 +436,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                       standing.club!,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary.withOpacity(0.8),
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
                       ),
                     ),
                 ],
@@ -459,7 +459,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                   '${standing.wins}승 ${standing.losses}패',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -481,7 +481,7 @@ class _LiveSortContentState extends State<LiveSortContent>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: isDeleted ? AppColors.textSecondary.withOpacity(0.2) : AppColors.border,
+          color: isDeleted ? AppColors.textSecondary.withValues(alpha: 0.2) : AppColors.border,
         ),
       ),
       child: Padding(
@@ -516,7 +516,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                               margin: const EdgeInsets.only(left: 4),
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                               decoration: BoxDecoration(
-                                color: AppColors.textSecondary.withOpacity(0.2),
+                                color: AppColors.textSecondary.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -531,7 +531,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                           standing.club!,
                           style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textSecondary.withOpacity(0.8),
+                            color: AppColors.textSecondary.withValues(alpha: 0.8),
                           ),
                         ),
                     ],
@@ -553,7 +553,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                       '${standing.wins}승 ${standing.losses}패${(standing.jigoes ?? 0) > 0 ? ' ${standing.jigoes}비김' : ''}',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary.withOpacity(0.8),
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -620,7 +620,7 @@ class _LiveSortContentState extends State<LiveSortContent>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: isNone ? AppColors.textSecondary.withOpacity(0.2) : AppColors.border,
+          color: isNone ? AppColors.textSecondary.withValues(alpha: 0.2) : AppColors.border,
         ),
       ),
       child: Padding(
@@ -660,7 +660,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                   '승점 ${(standing.useSwissLeague ?? 0).toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -719,7 +719,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                     standing.winRate!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary.withOpacity(0.8),
+                      color: AppColors.textSecondary.withValues(alpha: 0.8),
                     ),
                   ),
               ],
@@ -791,7 +791,7 @@ class _LiveSortContentState extends State<LiveSortContent>
                       '총 ${standing.totalIndividualWins ?? 0}승',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary.withOpacity(0.8),
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -838,10 +838,10 @@ class _LiveSortContentState extends State<LiveSortContent>
           width: 32,
           height: 26,
           decoration: BoxDecoration(
-            color: wins > 0 ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+            color: wins > 0 ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: wins > 0 ? AppColors.primary.withOpacity(0.3) : AppColors.border,
+              color: wins > 0 ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border,
             ),
           ),
           alignment: Alignment.center,
@@ -964,9 +964,9 @@ class _LiveSortContentState extends State<LiveSortContent>
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: AppColors.warning.withOpacity(0.3)),
+        side: BorderSide(color: AppColors.warning.withValues(alpha: 0.3)),
       ),
-      color: AppColors.warning.withOpacity(0.05),
+      color: AppColors.warning.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
@@ -1199,7 +1199,7 @@ class _LiveSortContentState extends State<LiveSortContent>
               '($score)',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary.withOpacity(0.8),
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
               ),
             ),
           ),
@@ -1222,7 +1222,7 @@ class _LiveSortContentState extends State<LiveSortContent>
               '($score)',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary.withOpacity(0.8),
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
               ),
             ),
           ),

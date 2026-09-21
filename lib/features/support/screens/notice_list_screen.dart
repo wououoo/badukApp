@@ -95,7 +95,7 @@ class _NoticeTile extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: notice.isImportant
-            ? Border.all(color: AppColors.primary.withOpacity(0.3))
+            ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
             : null,
       ),
       child: InkWell(

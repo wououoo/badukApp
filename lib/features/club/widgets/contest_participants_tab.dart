@@ -94,7 +94,7 @@ class ContestParticipantsTab extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(color: AppColors.textTertiary.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(color: AppColors.textTertiary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
                         child: Text('게스트', style: TextStyle(fontSize: 10, color: AppColors.textTertiary)),
                       ),
                     ],
@@ -386,7 +386,7 @@ class ContestParticipantsTab extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Container(
                   width: 28, height: 28,
-                  decoration: BoxDecoration(color: AppColors.clubPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(color: AppColors.clubPrimary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                   alignment: Alignment.center,
                   child: Text('$position', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.clubPrimary)),
                 ),
@@ -556,7 +556,7 @@ class ContestParticipantsTab extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.clubPrimary.withOpacity(0.06),
+                      color: AppColors.clubPrimary.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

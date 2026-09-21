@@ -29,14 +29,19 @@ class IconGridMenu extends StatelessWidget {
     this.onItemTap,
   });
 
-  /// 기본 메뉴 아이템 10개
+  /// 홈 빠른 실행 — 하단 탭·앱바에서 못 가는 것만 남긴다.
+  ///
+  /// 대회·클럽은 하단 탭, 설정은 내정보, 알림은 앱바 종 아이콘에 이미 있어서 뺐다.
+  /// 같은 곳으로 가는 길이 여럿이면 무엇을 눌러야 할지 판단할 일만 늘어난다.
+  /// QR 스캔은 대회장 포스터를 찍는 용도라 앱에 이미 로그인한 사람에겐 쓸 일이 드물어 뺐다.
+  /// (즐겨찾기는 /favorites 라우트 자체가 없어 눌러도 이동하지 않던 항목이라 함께 제외)
   static List<IconMenuItem> defaultItems() {
     return const [
       IconMenuItem(
-        icon: Icons.emoji_events_outlined,
-        label: '대회',
-        color: Color(0xFFD4603C),
-        routePath: '/contests',
+        icon: Icons.how_to_reg,
+        label: '신청내역',
+        color: Color(0xFF10B981),
+        routePath: '/profile/registrations',
       ),
       IconMenuItem(
         icon: Icons.history,
@@ -45,51 +50,15 @@ class IconGridMenu extends StatelessWidget {
         routePath: '/history',
       ),
       IconMenuItem(
-        icon: Icons.how_to_reg,
-        label: '신청내역',
-        color: Color(0xFF7C3AED),
-        routePath: '/profile/registrations',
-      ),
-      IconMenuItem(
-        icon: Icons.qr_code_scanner,
-        label: 'QR체크인',
-        color: Color(0xFF10B981),
-        routePath: '/qr/scan',
-      ),
-      IconMenuItem(
-        icon: Icons.groups_outlined,
-        label: '클럽',
-        color: Color(0xFFF59E0B),
-        routePath: '/clubs-tab',
-      ),
-      IconMenuItem(
-        icon: Icons.leaderboard_outlined,
-        label: '맥마흔점수',
-        color: Color(0xFFEC4899),
-        routePath: '/profile',
-      ),
-      IconMenuItem(
-        icon: Icons.favorite_outline,
-        label: '즐겨찾기',
-        color: Color(0xFFEF4444),
-        routePath: '/favorites',
-      ),
-      IconMenuItem(
-        icon: Icons.notifications_outlined,
-        label: '알림',
-        color: Color(0xFF6366F1),
-        routePath: '/notifications',
-      ),
-      IconMenuItem(
-        icon: Icons.settings_outlined,
-        label: '설정',
-        color: Color(0xFF64748B),
-        routePath: '/settings',
+        icon: Icons.calendar_month_outlined,
+        label: '대회일정',
+        color: Color(0xFF8B5CF6),
+        routePath: '/calendar',
       ),
       IconMenuItem(
         icon: Icons.dynamic_feed_outlined,
         label: '피드',
-        color: Color(0xFF8B5CF6),
+        color: Color(0xFFF59E0B),
         routePath: '/feed',
       ),
     ];
@@ -100,12 +69,12 @@ class IconGridMenu extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GridView.count(
-        crossAxisCount: 5,
+        crossAxisCount: 4,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 8,
         crossAxisSpacing: 4,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.95,
         children: items.map((item) => _buildItem(item)).toList(),
       ),
     );
@@ -128,7 +97,7 @@ class IconGridMenu extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: item.color.withOpacity(0.12),
+              color: item.color.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(

@@ -186,7 +186,7 @@ class _ClubMemberPickerScreenState extends State<ClubMemberPickerScreen> {
                 color: AppColors.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, -2),
                   ),
@@ -248,7 +248,7 @@ class _ClubMemberPickerScreenState extends State<ClubMemberPickerScreen> {
             : BorderSide.none,
       ),
       elevation: 0,
-      color: isSelected ? AppColors.clubPrimary.withOpacity(0.05) : AppColors.surface,
+      color: isSelected ? AppColors.clubPrimary.withValues(alpha: 0.05) : AppColors.surface,
       child: InkWell(
         onTap: () => _toggleMember(member.userId),
         borderRadius: BorderRadius.circular(10),
@@ -280,7 +280,7 @@ class _ClubMemberPickerScreenState extends State<ClubMemberPickerScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
-                    color: AppColors.clubPrimary.withOpacity(0.1),
+                    color: AppColors.clubPrimary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(

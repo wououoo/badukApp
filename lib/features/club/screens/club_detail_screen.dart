@@ -432,7 +432,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
           color: AppColors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -525,7 +525,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -578,7 +578,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: club.photoUrl != null
@@ -606,7 +606,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
                     if (club.region != null)
                       Text(
                         '${club.region}${club.city != null ? ' ${club.city}' : ''}',
-                        style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.7)),
+                        style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7)),
                       ),
                   ],
                 ),
@@ -620,12 +620,12 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
+                color: Colors.white.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 club.description!,
-                style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.95), height: 1.4),
+                style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.95), height: 1.4),
               ),
             ),
           ],
@@ -646,9 +646,9 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
   Widget _buildStatItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.white.withOpacity(0.7)),
+        Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
-        Text(text, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.9))),
+        Text(text, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9))),
       ],
     );
   }
@@ -735,7 +735,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -784,7 +784,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
             CircleAvatar(
               radius: 18,
               backgroundColor: (isMemberOwner || isMemberAdmin)
-                  ? AppColors.clubPrimary.withOpacity(0.15)
+                  ? AppColors.clubPrimary.withValues(alpha: 0.15)
                   : AppColors.background,
               child: Text(
                 (member.name ?? '?')[0],
@@ -811,7 +811,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppColors.clubPrimary.withOpacity(0.1),
+                            color: AppColors.clubPrimary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
@@ -825,7 +825,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> with SingleTickerPr
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
+                            color: Colors.orange.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(

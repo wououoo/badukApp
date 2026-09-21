@@ -167,6 +167,19 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                 reg['categoryName'] ?? '',
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
+              // 신청한 추가 항목 한 줄 요약 (숙박·식사 등) — 상세를 열지 않아도 보이게
+              if (_groupOptions(_optionsOf(reg)).isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _groupOptions(_optionsOf(reg))
+                      .entries
+                      .map((e) => '${e.key} ${e.value}')
+                      .join(' · '),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
               const SizedBox(height: 12),
               // 결제 상태 + 금액 (참가비 있을 때만)
               if (fee > 0)
@@ -217,26 +230,26 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
+        color: AppColors.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFFE082)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.30)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.account_balance, size: 16, color: const Color(0xFFB26A00)),
+              Icon(Icons.account_balance, size: 16, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
                 '입금 안내',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFFB26A00)),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
               ),
               const Spacer(),
               if (dueDate.isNotEmpty)
                 Text(
                   '$dueDate까지',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFB26A00)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
                 ),
             ],
           ),
@@ -272,11 +285,11 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFFFE082)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.30)),
                   ),
                   child: Text(
                     '복사',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFB26A00)),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
                   ),
                 ),
               ),
@@ -293,7 +306,7 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -402,7 +415,7 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
         break;
       case 'WAITING_FOR_DEPOSIT':
         bg = const Color(0xFFFFF3CD);
-        text = const Color(0xFFB26A00);
+        text = AppColors.primary;
         label = '입금대기';
         break;
       case 'PENDING':
@@ -455,6 +468,10 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
     final canEdit = status == 'PENDING' || status == 'APPROVED';
     final canCancel = !cancellationBlocked && (status == 'PENDING' || (status == 'APPROVED' && paymentStatus != 'COMPLETED'));
     final canRefund = !cancellationBlocked && (status == 'APPROVED' && paymentStatus == 'COMPLETED');
+    // 유료 항목(숙박 등)을 가진 대회에서, 결제를 마친 신청이면 항목만 더 살 수 있다.
+    final canAddon = reg['hasPaidOptions'] == true &&
+        status == 'APPROVED' &&
+        paymentStatus == 'COMPLETED';
     final canPay = fee > 0 && unpaid > 0 && (paymentStatus == 'UNPAID' || paymentStatus == 'PENDING')
         && (status == 'PENDING' || status == 'APPROVED');
     final hasRefund = paymentStatus == 'REFUNDED' || paymentStatus == 'PARTIAL_REFUNDED';
@@ -467,8 +484,14 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (bottomSheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      // 시트는 화면 맨 아래에 붙는다. SafeArea가 없으면 제스처 바(홈 인디케이터)가
+      // 마지막 버튼 위에 겹쳐 눌리지 않는다.
+      builder: (bottomSheetContext) => SafeArea(
+        // 결제·환불 내역과 액션 버튼까지 붙으면 내용이 화면보다 길어져 아래가 잘렸다.
+        // isScrollControlled는 시트를 늘려줄 뿐 넘치는 부분을 처리하지 않으므로 스크롤을 준다.
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -501,6 +524,12 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
             ],
             if (registeredAt != null)
               _detailRow('신청일', _formatDate(registeredAt)),
+
+            // 신청한 추가 항목(숙박·식사 등) — 서버가 options로 내려준다. 없는 대회는 이 블록 자체가 안 그려진다.
+            if (_optionsOf(reg).isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildOptionsSection(_optionsOf(reg)),
+            ],
 
             // 환불 내역 표시
             if (hasRefund) ...[
@@ -540,9 +569,9 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.08),
+                  color: AppColors.error.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,8 +670,37 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
                 ),
               ],
             ],
+
+            // 항목 추가결제 — 결제를 마친 신청에, 대회가 유료 항목(숙박 등)을 가진 경우에만.
+            // 취소 차단(cancellationBlocked)과는 무관하다. 돈을 더 내는 행위라 막을 이유가 없다.
+            if (canAddon) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.add_shopping_cart_outlined,
+                      label: '항목 추가결제',
+                      color: AppColors.primary,
+                      onTap: () async {
+                        Navigator.pop(bottomSheetContext);
+                        final done = await context.push<bool>('/payment/addon', extra: {
+                          'registrationId': registrationId,
+                          'homepageId': reg['homepageId'],
+                          'categoryId': reg['categoryId'],
+                          'contestName': reg['contestName'] ?? '',
+                        });
+                        if (done == true) ref.invalidate(myRegistrationsProvider);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -659,9 +717,9 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -781,6 +839,108 @@ class _MyRegistrationsScreenState extends ConsumerState<MyRegistrationsScreen> {
     return n.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
+    );
+  }
+
+  /// 서버가 내려준 신청 옵션 목록. 옵션을 안 쓰는 대회는 빈 리스트.
+  List<Map<String, dynamic>> _optionsOf(Map<String, dynamic> reg) {
+    final raw = reg['options'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// 같은 항목(optionKey)끼리 묶어 "숙박 → 1/23 밤, 1/24 밤 ×2" 한 줄로 만든다.
+  /// 서버가 답변 행 단위로 주기 때문에, 그대로 나열하면 같은 항목이 여러 줄로 흩어진다.
+  Map<String, String> _groupOptions(List<Map<String, dynamic>> options) {
+    final values = <String, List<String>>{};
+    final labels = <String, String>{};
+    final order = <String>[];
+    for (final o in options) {
+      final key = (o['optionKey'] ?? '').toString();
+      if (key.isEmpty) continue;
+      if (!order.contains(key)) order.add(key);
+      labels[key] = (o['optionLabel'] ?? key).toString();
+
+      final text = (o['textValue'] ?? '').toString().trim();
+      var value = text.isNotEmpty
+          ? text
+          : (o['choiceLabel'] ?? o['choiceValue'] ?? '').toString().trim();
+      if (value.isEmpty) continue;
+
+      final qty = (o['quantity'] as num?)?.toInt() ?? 1;
+      if (qty > 1) value = '$value ×$qty';
+      values.putIfAbsent(key, () => []).add(value);
+    }
+    final result = <String, String>{};
+    for (final key in order) {
+      final list = values[key];
+      if (list == null || list.isEmpty) continue;
+      result[labels[key] ?? key] = list.join(', ');
+    }
+    return result;
+  }
+
+  /// 신청 상세의 '추가 신청 항목' 박스
+  Widget _buildOptionsSection(List<Map<String, dynamic>> options) {
+    final grouped = _groupOptions(options);
+    if (grouped.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.checklist_rtl, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                '추가 신청 항목',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...grouped.entries.map((e) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 76,
+                      child: Text(
+                        e.key,
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        e.value,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
     );
   }
 

@@ -186,17 +186,17 @@ class _InquiryTile extends StatelessWidget {
 
     switch (status) {
       case 'PENDING':
-        bgColor = AppColors.warning.withOpacity(0.1);
+        bgColor = AppColors.warning.withValues(alpha: 0.1);
         textColor = AppColors.warning;
         text = '답변 대기';
         break;
       case 'ANSWERED':
-        bgColor = AppColors.success.withOpacity(0.1);
+        bgColor = AppColors.success.withValues(alpha: 0.1);
         textColor = AppColors.success;
         text = '답변 완료';
         break;
       default:
-        bgColor = AppColors.textTertiary.withOpacity(0.1);
+        bgColor = AppColors.textTertiary.withValues(alpha: 0.1);
         textColor = AppColors.textTertiary;
         text = status;
     }

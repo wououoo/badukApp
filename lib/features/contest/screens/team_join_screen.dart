@@ -213,7 +213,7 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check, color: AppColors.success),
@@ -376,7 +376,7 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child:
@@ -401,7 +401,7 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
                 Text(
                   widget.category.categoryName,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                 ),
@@ -528,7 +528,7 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withOpacity(0.1)
+                    ? AppColors.primary.withValues(alpha: 0.1)
                     : AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -572,8 +572,8 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: isFull
-                    ? AppColors.error.withOpacity(0.1)
-                    : AppColors.success.withOpacity(0.1),
+                    ? AppColors.error.withValues(alpha: 0.1)
+                    : AppColors.success.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -619,7 +619,7 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
                 color: filled
                     ? AppColors.surfaceVariant
                     : isSelected
-                        ? AppColors.primary.withOpacity(0.05)
+                        ? AppColors.primary.withValues(alpha: 0.05)
                         : AppColors.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
@@ -638,7 +638,7 @@ class _TeamJoinScreenState extends ConsumerState<TeamJoinScreen> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: filled
-                          ? AppColors.textTertiary.withOpacity(0.2)
+                          ? AppColors.textTertiary.withValues(alpha: 0.2)
                           : isSelected
                               ? AppColors.primary
                               : AppColors.surfaceVariant,

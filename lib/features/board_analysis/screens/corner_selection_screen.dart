@@ -102,7 +102,7 @@ class _CornerSelectionScreenState extends State<CornerSelectionScreen> {
               color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, -2),
                 ),
@@ -188,7 +188,7 @@ class _CornerSelectionScreenState extends State<CornerSelectionScreen> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.8),
+            color: color.withValues(alpha: 0.8),
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 2),
           ),
@@ -258,10 +258,11 @@ class _CornerSelectionScreenState extends State<CornerSelectionScreen> {
         if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute(
+            // 미완성 기능: 결과 화면이 아직 코너/차례 정보를 받지 못한다.
+            // 인자를 넘기면 컴파일이 깨지므로, 결과 화면이 확장될 때까지 파일만 전달한다.
+            // TODO(board-analysis): BoardAnalysisResultScreen에 corners·nextColor 파라미터 추가
             builder: (_) => BoardAnalysisResultScreen(
               imageFile: widget.imageFile,
-              corners: imageCorners,
-              nextColor: _nextColor,
             ),
           ),
         );
@@ -289,7 +290,7 @@ class _CornerLinePainter extends CustomPainter {
     if (corners.length < 2) return;
 
     final paint = Paint()
-      ..color = Colors.yellow.withOpacity(0.8)
+      ..color = Colors.yellow.withValues(alpha: 0.8)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 

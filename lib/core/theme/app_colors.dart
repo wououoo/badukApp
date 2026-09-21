@@ -50,6 +50,15 @@ class AppColors {
   static Color get surfaceVariant => _isDark ? const Color(0xFF2A2420) : const Color(0xFFFFF5F0);
   static Color get card => _isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF);
 
+  // ── 반상(board) — 화면에서 '지금 급한 것' 하나만 입는 검은 면 ──
+  // 흰 카드가 늘어서면 무엇이 중요한지 안 보인다. 입금 기한처럼 놓치면 손해인 것만
+  // 이 색을 써서 시선이 갈 곳을 정한다. 다크 모드에선 더 깊게 내려 흰 카드와 계속 구분되게 한다.
+  static Color get board => _isDark ? const Color(0xFF05080C) : const Color(0xFF0E1620);
+  static const Color boardGrid = Color(0x0EFFFFFF);   // 반상 위 격자 (5.5% 흰색)
+  // 반상 위 카운트다운 — primary(#D4603C)를 어두운 면에서도 읽히게 밝힌 값.
+  // 별개의 주황이 아니라 같은 코랄 계열이어야 화면에 주황이 여럿 돌지 않는다.
+  static const Color boardAccent = Color(0xFFF0855F);
+
   // ========== Border & Divider — 다크 지원 ==========
   static Color get border => _isDark ? const Color(0xFF333333) : const Color(0xFFE2E8F0);
   static Color get divider => _isDark ? const Color(0xFF333333) : const Color(0xFFE2E8F0);

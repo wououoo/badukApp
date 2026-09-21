@@ -109,7 +109,7 @@ class ContestRankingsTab extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 6), elevation: 0,
       color: isNone ? AppColors.background : AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isNone ? AppColors.textTertiary.withOpacity(0.2) : AppColors.border)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isNone ? AppColors.textTertiary.withValues(alpha: 0.2) : AppColors.border)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: isTeamContest
@@ -171,13 +171,13 @@ class ContestRankingsTab extends StatelessWidget {
     Color statusBg;
     if (status == '본선진출') {
       statusColor = AppColors.success;
-      statusBg = AppColors.success.withOpacity(0.12);
+      statusBg = AppColors.success.withValues(alpha: 0.12);
     } else if (status == '탈락') {
       statusColor = Colors.red;
-      statusBg = Colors.red.withOpacity(0.08);
+      statusBg = Colors.red.withValues(alpha: 0.08);
     } else {
       statusColor = AppColors.textTertiary;
-      statusBg = AppColors.textTertiary.withOpacity(0.08);
+      statusBg = AppColors.textTertiary.withValues(alpha: 0.08);
     }
 
     return Row(

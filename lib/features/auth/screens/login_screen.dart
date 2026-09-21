@@ -47,7 +47,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
         ref.read(authProvider.notifier).clearError();
@@ -74,7 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: const Icon(
@@ -98,7 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 8),
                       Text(
                         '대회 참가부터 기록까지 한 번에',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                       ),
 
                       const Spacer(flex: 2),
@@ -125,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Text(
                         '로그인 시 이용약관 및 개인정보처리방침에\n동의하는 것으로 간주합니다.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[400], height: 1.5),
+                        style: TextStyle(fontSize: 12, color: AppColors.textTertiary, height: 1.5),
                       ),
 
                       const Spacer(),
@@ -237,8 +237,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       child: OutlinedButton(
         onPressed: (authState.isLoading || _isLoading) ? null : _handleTestLogin,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.grey[700],
-          side: BorderSide(color: Colors.grey[300]!),
+          foregroundColor: AppColors.textSecondary,
+          side: BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -249,11 +249,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.science_outlined, size: 20, color: Colors.grey[600]),
+              Icon(Icons.science_outlined, size: 20, color: AppColors.textSecondary),
               const SizedBox(width: 8),
               Text(
                 '테스트 계정으로 로그인',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
               ),
             ],
           ),

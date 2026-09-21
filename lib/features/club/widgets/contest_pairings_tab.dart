@@ -102,7 +102,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.warning.withOpacity(0.4))),
+            decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.warning.withValues(alpha: 0.4))),
             child: Row(children: [
               Icon(Icons.swap_horiz, size: 20, color: AppColors.warning),
               const SizedBox(width: 8),
@@ -117,7 +117,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(color: AppColors.clubPrimary.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: AppColors.clubPrimary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
             child: Row(children: [
               Icon(Icons.emoji_events, size: 20, color: AppColors.clubPrimary),
               const SizedBox(width: 8),
@@ -129,7 +129,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
           Container(
             margin: const EdgeInsets.symmetric(vertical: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(color: AppColors.textTertiary.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: AppColors.textTertiary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
             child: Row(children: [
               Icon(Icons.group, size: 20, color: AppColors.textSecondary),
               const SizedBox(width: 8),
@@ -189,7 +189,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: _swapMode ? AppColors.warning.withOpacity(0.1) : (allFinished ? AppColors.success.withOpacity(0.08) : AppColors.clubPrimary.withOpacity(0.05)),
+          color: _swapMode ? AppColors.warning.withValues(alpha: 0.1) : (allFinished ? AppColors.success.withValues(alpha: 0.08) : AppColors.clubPrimary.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -201,7 +201,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: allFinished ? AppColors.success.withOpacity(0.15) : AppColors.textTertiary.withOpacity(0.1),
+                color: allFinished ? AppColors.success.withValues(alpha: 0.15) : AppColors.textTertiary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(allFinished ? '완료' : '$finishedCount/$totalCount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: allFinished ? AppColors.success : AppColors.textSecondary)),
@@ -210,7 +210,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: AppColors.textTertiary.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: AppColors.textTertiary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                 child: Text('확정', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textTertiary)),
               ),
             ],
@@ -226,7 +226,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _swapMode ? AppColors.warning : AppColors.textTertiary.withOpacity(0.1),
+                    color: _swapMode ? AppColors.warning : AppColors.textTertiary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -292,10 +292,10 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
       return Card(
         margin: const EdgeInsets.only(bottom: 6),
         elevation: 0,
-        color: (isP1Selected || isP2Selected) ? AppColors.warning.withOpacity(0.08) : AppColors.surface,
+        color: (isP1Selected || isP2Selected) ? AppColors.warning.withValues(alpha: 0.08) : AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: (isP1Selected || isP2Selected) ? AppColors.warning.withOpacity(0.5) : AppColors.border),
+          side: BorderSide(color: (isP1Selected || isP2Selected) ? AppColors.warning.withValues(alpha: 0.5) : AppColors.border),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -306,7 +306,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: isP1Selected ? AppColors.warning.withOpacity(0.2) : Colors.transparent,
+                    color: isP1Selected ? AppColors.warning.withValues(alpha: 0.2) : Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
                     border: isP1Selected ? Border.all(color: AppColors.warning) : null,
                   ),
@@ -319,7 +319,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: isP2Selected ? AppColors.warning.withOpacity(0.2) : Colors.transparent,
+                    color: isP2Selected ? AppColors.warning.withValues(alpha: 0.2) : Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
                     border: isP2Selected ? Border.all(color: AppColors.warning) : null,
                   ),
@@ -335,10 +335,10 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       elevation: 0,
-      color: isEnded ? AppColors.success.withOpacity(0.06) : AppColors.surface,
+      color: isEnded ? AppColors.success.withValues(alpha: 0.06) : AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: isEnded ? AppColors.success.withOpacity(0.3) : AppColors.border),
+        side: BorderSide(color: isEnded ? AppColors.success.withValues(alpha: 0.3) : AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -424,7 +424,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
     return Container(
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: AppColors.success.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
       child: const Text('승', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success)),
     );
   }
@@ -618,7 +618,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: allFinished ? AppColors.success.withOpacity(0.08) : AppColors.clubPrimary.withOpacity(0.05),
+                color: allFinished ? AppColors.success.withValues(alpha: 0.08) : AppColors.clubPrimary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -630,7 +630,7 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: allFinished ? AppColors.success.withOpacity(0.15) : AppColors.textTertiary.withOpacity(0.1),
+                      color: allFinished ? AppColors.success.withValues(alpha: 0.15) : AppColors.textTertiary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(allFinished ? '완료' : '$finishedCount/$totalCount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: allFinished ? AppColors.success : AppColors.textSecondary)),
@@ -662,8 +662,8 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
 
     final card = Card(
       margin: const EdgeInsets.only(bottom: 6), elevation: 0,
-      color: isEnded ? AppColors.success.withOpacity(0.06) : AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isEnded ? AppColors.success.withOpacity(0.3) : AppColors.border)),
+      color: isEnded ? AppColors.success.withValues(alpha: 0.06) : AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isEnded ? AppColors.success.withValues(alpha: 0.3) : AppColors.border)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -794,8 +794,8 @@ class _ContestPairingsTabState extends State<ContestPairingsTab> with AutomaticK
       onTap: canEdit ? () => _showTeamMatchDetailModal(match, round) : null,
       child: Card(
         margin: const EdgeInsets.only(bottom: 6), elevation: 0,
-        color: isCompleted ? AppColors.success.withOpacity(0.06) : AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isCompleted ? AppColors.success.withOpacity(0.3) : AppColors.border)),
+        color: isCompleted ? AppColors.success.withValues(alpha: 0.06) : AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isCompleted ? AppColors.success.withValues(alpha: 0.3) : AppColors.border)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(

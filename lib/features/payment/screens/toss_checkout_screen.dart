@@ -397,7 +397,7 @@ class _TossCheckoutScreenState extends ConsumerState<TossCheckoutScreen> {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final shouldClose = await _handleBackPressed();
-        if (shouldClose && mounted) {
+        if (shouldClose && context.mounted) {
           context.pop(false);
         }
       },
@@ -410,7 +410,7 @@ class _TossCheckoutScreenState extends ConsumerState<TossCheckoutScreen> {
             icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () async {
               final shouldClose = await _handleBackPressed();
-              if (shouldClose && mounted) {
+              if (shouldClose && context.mounted) {
                 context.pop(false);
               }
             },
@@ -445,7 +445,7 @@ class _TossCheckoutScreenState extends ConsumerState<TossCheckoutScreen> {
           // 로딩 인디케이터
           if (!kIsWeb && (_isLoading || _isConfirming))
             Container(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

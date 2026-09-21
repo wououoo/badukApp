@@ -428,8 +428,8 @@ class _ClubContestCreateScreenState extends State<ClubContestCreateScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: section['gameType'] == '풀리그'
-                                ? Colors.orange.withOpacity(0.1)
-                                : AppColors.clubPrimary.withOpacity(0.1),
+                                ? Colors.orange.withValues(alpha: 0.1)
+                                : AppColors.clubPrimary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -466,7 +466,7 @@ class _ClubContestCreateScreenState extends State<ClubContestCreateScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.clubPrimary.withOpacity(0.05),
+                color: AppColors.clubPrimary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

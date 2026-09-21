@@ -38,7 +38,7 @@ class ContestPosterCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -70,7 +70,7 @@ class ContestPosterCard extends ConsumerWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.75),
+                      Colors.black.withValues(alpha: 0.75),
                     ],
                   ),
                 ),
@@ -142,7 +142,7 @@ class ContestPosterCard extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -161,7 +161,8 @@ class ContestPosterCard extends ConsumerWidget {
     );
   }
 
-  /// 포스터가 없을 때 대회 유형별 그라데이션 배경
+  /// 포스터가 없을 때 대회 유형별 그라데이션 배경 + 브랜드 로고 워터마크.
+  /// (기존엔 흐릿한 대회명만 있어 "텅 빈" 느낌 → 로고 심볼로 채워 의도된 화면으로)
   Widget _buildGradientBackground() {
     // 상태에 따라 색상 변경
     final colors = _getGradientColors();
@@ -176,18 +177,22 @@ class ContestPosterCard extends ConsumerWidget {
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
-          child: Text(
-            contest.name,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white.withOpacity(0.3),
-              height: 1.4,
+          // 하단 오버레이(대회명·날짜) 영역을 피해 살짝 위로
+          padding: const EdgeInsets.only(bottom: 40),
+          child: Opacity(
+            opacity: 0.9,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/images/splash_logo.png',
+                width: 44,
+                height: 44,
+              ),
             ),
-            textAlign: TextAlign.center,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),

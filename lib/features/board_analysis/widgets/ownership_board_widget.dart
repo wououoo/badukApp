@@ -54,7 +54,7 @@ class _OwnershipBoardPainter extends CustomPainter {
 
     // 1. 격자선 그리기
     final linePaint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withValues(alpha: 0.5)
       ..strokeWidth = 0.8;
 
     for (int i = 0; i < boardSize; i++) {
@@ -74,7 +74,7 @@ class _OwnershipBoardPainter extends CustomPainter {
     }
 
     // 2. 화점(별점) 그리기
-    final dotPaint = Paint()..color = Colors.black.withOpacity(0.6);
+    final dotPaint = Paint()..color = Colors.black.withValues(alpha: 0.6);
     const starPoints = [3, 9, 15];
     for (final r in starPoints) {
       for (final c in starPoints) {
@@ -105,7 +105,7 @@ class _OwnershipBoardPainter extends CustomPainter {
             // 흑 영역 - 검정 반투명 사각형
             final opacity = (val.clamp(0.1, 1.0) * 0.6);
             final paint = Paint()
-              ..color = Colors.black.withOpacity(opacity);
+              ..color = Colors.black.withValues(alpha: opacity);
             canvas.drawRect(
               Rect.fromCenter(
                   center: Offset(cx, cy), width: rectSize, height: rectSize),
@@ -115,9 +115,9 @@ class _OwnershipBoardPainter extends CustomPainter {
             // 백 영역 - 흰색 반투명 사각형 + 테두리
             final opacity = ((-val).clamp(0.1, 1.0) * 0.7);
             final paint = Paint()
-              ..color = Colors.white.withOpacity(opacity);
+              ..color = Colors.white.withValues(alpha: opacity);
             final borderPaint = Paint()
-              ..color = Colors.black.withOpacity(opacity * 0.5)
+              ..color = Colors.black.withValues(alpha: opacity * 0.5)
               ..style = PaintingStyle.stroke
               ..strokeWidth = 0.5;
             canvas.drawRect(
@@ -151,7 +151,7 @@ class _OwnershipBoardPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(cx + 1, cy + 1),
         stoneRadius,
-        Paint()..color = Colors.black.withOpacity(0.2),
+        Paint()..color = Colors.black.withValues(alpha: 0.2),
       );
 
       // 돌

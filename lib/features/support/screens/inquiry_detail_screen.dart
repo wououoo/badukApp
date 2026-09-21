@@ -122,9 +122,9 @@ class InquiryDetailScreen extends ConsumerWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withOpacity(0.1),
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,17 +211,17 @@ class InquiryDetailScreen extends ConsumerWidget {
 
     switch (status) {
       case 'PENDING':
-        bgColor = AppColors.warning.withOpacity(0.1);
+        bgColor = AppColors.warning.withValues(alpha: 0.1);
         textColor = AppColors.warning;
         text = '답변 대기';
         break;
       case 'ANSWERED':
-        bgColor = AppColors.success.withOpacity(0.1);
+        bgColor = AppColors.success.withValues(alpha: 0.1);
         textColor = AppColors.success;
         text = '답변 완료';
         break;
       default:
-        bgColor = AppColors.textTertiary.withOpacity(0.1);
+        bgColor = AppColors.textTertiary.withValues(alpha: 0.1);
         textColor = AppColors.textTertiary;
         text = status;
     }

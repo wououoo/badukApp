@@ -243,7 +243,7 @@ class _ClubContestsScreenState extends State<ClubContestsScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.clubPrimary.withOpacity(0.1),
+                        color: AppColors.clubPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -255,7 +255,7 @@ class _ClubContestsScreenState extends State<ClubContestsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isFinished ? Colors.grey.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                      color: isFinished ? Colors.grey.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(

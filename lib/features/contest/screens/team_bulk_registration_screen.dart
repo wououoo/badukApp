@@ -199,7 +199,7 @@ class _TeamBulkRegistrationScreenState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check, color: AppColors.success),
@@ -515,7 +515,7 @@ class _TeamBulkRegistrationScreenState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.groups, color: Colors.white, size: 24),
@@ -539,7 +539,7 @@ class _TeamBulkRegistrationScreenState
                 Text(
                   '${widget.category.categoryName} (${_teamSize}인조)',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                 ),

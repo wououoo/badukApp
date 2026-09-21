@@ -99,7 +99,7 @@ class _QRScannerScreenState extends ConsumerState<QRScannerScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: const Text(
@@ -116,7 +116,7 @@ class _QRScannerScreenState extends ConsumerState<QRScannerScreen> {
           // 참가 정보 확인 중 로딩 오버레이
           if (_isSearching)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -151,7 +151,7 @@ class _QRScannerScreenState extends ConsumerState<QRScannerScreen> {
             // 어두운 오버레이
             ColorFiltered(
               colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.5),
+                Colors.black.withValues(alpha: 0.5),
                 BlendMode.srcOut,
               ),
               child: Stack(

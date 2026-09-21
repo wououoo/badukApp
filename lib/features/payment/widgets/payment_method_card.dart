@@ -26,7 +26,7 @@ class PaymentMethodCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent.withOpacity(0.05) : AppColors.surface,
+          color: isSelected ? AppColors.accent.withValues(alpha: 0.05) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.accent : AppColors.border,
@@ -41,7 +41,7 @@ class PaymentMethodCard extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.accent.withOpacity(0.1)
+                    ? AppColors.accent.withValues(alpha: 0.1)
                     : AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),

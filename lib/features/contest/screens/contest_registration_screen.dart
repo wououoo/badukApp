@@ -488,7 +488,7 @@ class _ContestRegistrationScreenState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check, color: AppColors.success),
@@ -566,8 +566,8 @@ class _ContestRegistrationScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.08),
-        border: Border.all(color: accent.withOpacity(0.3)),
+        color: accent.withValues(alpha: 0.08),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -591,7 +591,7 @@ class _ContestRegistrationScreenState
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: accent.withOpacity(0.85),
+                          color: accent.withValues(alpha: 0.85),
                         ),
                       ),
                     Text(
@@ -611,7 +611,7 @@ class _ContestRegistrationScreenState
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: accent.withOpacity(0.18),
+                    color: accent.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -800,7 +800,7 @@ class _ContestRegistrationScreenState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -829,7 +829,7 @@ class _ContestRegistrationScreenState
                   Text(
                     widget.contest.schedule!,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 13,
                     ),
                   ),
@@ -979,7 +979,7 @@ class _ContestRegistrationScreenState
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: isSelected
-                                  ? AppColors.primary.withOpacity(0.85)
+                                  ? AppColors.primary.withValues(alpha: 0.85)
                                   : AppColors.textSecondary,
                             ),
                           ),
@@ -1074,7 +1074,7 @@ class _ContestRegistrationScreenState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.accent.withOpacity(0.1),
+                        color: AppColors.accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -1094,7 +1094,7 @@ class _ContestRegistrationScreenState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
+                        color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
@@ -1115,7 +1115,7 @@ class _ContestRegistrationScreenState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -1415,7 +1415,7 @@ class _ContestRegistrationScreenState
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
             decoration: BoxDecoration(
-              color: selected ? AppColors.primary.withOpacity(0.08) : AppColors.surface,
+              color: selected ? AppColors.primary.withValues(alpha: 0.08) : AppColors.surface,
               border: Border.all(
                 color: selected ? AppColors.primary : AppColors.border,
                 width: selected ? 2 : 1,
@@ -1521,7 +1521,7 @@ class _ContestRegistrationScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
@@ -1717,7 +1717,7 @@ class _ContestRegistrationScreenState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -1816,7 +1816,7 @@ class _ContestRegistrationScreenState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -1881,7 +1881,7 @@ class _ContestRegistrationScreenState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.1),
+                      color: AppColors.accent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -2174,10 +2174,10 @@ class _ContestRegistrationScreenState
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: value ? AppColors.primary.withOpacity(0.05) : AppColors.surface,
+        color: value ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: value ? AppColors.primary.withOpacity(0.3) : AppColors.border,
+          color: value ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border,
         ),
       ),
       child: Row(

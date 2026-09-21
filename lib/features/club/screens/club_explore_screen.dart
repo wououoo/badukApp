@@ -175,7 +175,7 @@ class _ClubExploreScreenState extends State<ClubExploreScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
                           color: _selectedRegion != null
-                              ? AppColors.clubPrimary.withOpacity(0.1)
+                              ? AppColors.clubPrimary.withValues(alpha: 0.1)
                               : AppColors.background,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
@@ -311,7 +311,7 @@ class _ClubExploreScreenState extends State<ClubExploreScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.clubPrimary.withOpacity(0.08),
+                  color: AppColors.clubPrimary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.groups_outlined, color: AppColors.clubPrimary, size: 22),

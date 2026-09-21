@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'full_image_viewer.dart';
 
 /// 배너 아이템 데이터 모델
 class BannerItem {
@@ -101,11 +102,21 @@ class _BannerCarouselState extends State<BannerCarousel> {
     );
   }
 
+  /// 포스터 크게 보기. 보는 동안엔 자동 넘김을 멈춰 닫았을 때 다른 배너로 바뀌어 있지 않게 한다.
+  Future<void> _openImage(BannerItem item) async {
+    _timer?.cancel();
+    await showFullImage(context, imageUrl: item.imageUrl!, title: item.title);
+    if (mounted) _startAutoScroll();
+  }
+
   Widget _buildBannerPage(BannerItem item) {
     final hasImage = item.imageUrl != null;
 
     return GestureDetector(
       onTap: () => widget.onTap?.call(item.routePath),
+      // 포스터 배너만 더블탭으로 크게 보기. 이미지 없는 배너에 onDoubleTap을 걸면
+      // Flutter가 더블탭인지 기다리느라 한 번 탭도 약 0.3초 늦게 반응하므로 null로 둔다.
+      onDoubleTap: hasImage ? () => _openImage(item) : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -139,13 +150,31 @@ class _BannerCarouselState extends State<BannerCarousel> {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.7),
+                              Colors.black.withValues(alpha: 0.7),
                             ],
                           ),
                         ),
                       )
                     : const SizedBox.shrink(),
               ),
+              // 크게 보기 버튼 — 더블탭은 눈에 안 보이는 기능이라, 누르면 바로 열리는 입구도 둔다
+              if (hasImage)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _openImage(item),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.zoom_out_map, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
               // 텍스트
               Positioned(
                 left: 20,
@@ -170,7 +199,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
                     Text(
                       item.subtitle,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                       ),
                       maxLines: 1,

@@ -305,7 +305,7 @@ class _ClubPostDetailScreenState extends State<ClubPostDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: AppColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Text(
@@ -317,7 +317,7 @@ class _ClubPostDetailScreenState extends State<ClubPostDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.clubPrimary.withOpacity(0.1),
+                        color: AppColors.clubPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Text(
@@ -339,7 +339,7 @@ class _ClubPostDetailScreenState extends State<ClubPostDetailScreen> {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: AppColors.clubPrimary.withOpacity(0.1),
+                backgroundColor: AppColors.clubPrimary.withValues(alpha: 0.1),
                 child: Text(
                   post.authorName.isNotEmpty ? post.authorName[0] : '?',
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.clubPrimary),
@@ -429,7 +429,7 @@ class _ClubPostDetailScreenState extends State<ClubPostDetailScreen> {
             ),
           CircleAvatar(
             radius: isReply ? 12 : 14,
-            backgroundColor: isReply ? AppColors.border.withOpacity(0.3) : AppColors.background,
+            backgroundColor: isReply ? AppColors.border.withValues(alpha: 0.3) : AppColors.background,
             child: Text(
               authorName.isNotEmpty ? authorName[0] : '?',
               style: TextStyle(fontSize: isReply ? 10 : 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),

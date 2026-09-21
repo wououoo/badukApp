@@ -148,8 +148,8 @@ class _AccountWithdrawalScreenState
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: _reasons.map((reason) {
@@ -203,10 +203,10 @@ class _AccountWithdrawalScreenState
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.border,
+                  foregroundColor: AppColors.textOnPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: _isLoading
@@ -214,7 +214,7 @@ class _AccountWithdrawalScreenState
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: AppColors.textOnPrimary,
                           strokeWidth: 2,
                         ),
                       )
@@ -248,7 +248,7 @@ class _AccountWithdrawalScreenState
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

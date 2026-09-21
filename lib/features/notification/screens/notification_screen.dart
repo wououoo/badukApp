@@ -194,10 +194,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: notification.isRead ? AppColors.border : AppColors.accentLight.withOpacity(0.3),
+          color: notification.isRead ? AppColors.border : AppColors.accentLight.withValues(alpha: 0.3),
         ),
       ),
-      color: notification.isRead ? AppColors.surface : AppColors.accentLight.withOpacity(0.03),
+      color: notification.isRead ? AppColors.surface : AppColors.accentLight.withValues(alpha: 0.03),
       child: InkWell(
         onTap: () {
           if (!notification.isRead) {
@@ -341,12 +341,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isImportant
-              ? AppColors.error.withOpacity(0.3)
+              ? AppColors.error.withValues(alpha: 0.3)
               : AppColors.border,
         ),
       ),
       color: isImportant
-          ? AppColors.error.withOpacity(0.05)
+          ? AppColors.error.withValues(alpha: 0.05)
           : AppColors.surface,
       child: InkWell(
         onTap: onTap,
@@ -466,7 +466,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: notificationColor.withOpacity(0.1),
+                      color: notificationColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -615,9 +615,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.error.withOpacity(0.3)),
+        side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
       ),
-      color: AppColors.error.withOpacity(0.05),
+      color: AppColors.error.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Center(

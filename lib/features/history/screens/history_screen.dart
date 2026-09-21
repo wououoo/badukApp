@@ -75,7 +75,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -282,7 +282,7 @@ class _ContestHistoryTabState extends ConsumerState<_ContestHistoryTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -309,7 +309,7 @@ class _ContestHistoryTabState extends ConsumerState<_ContestHistoryTab> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -334,7 +334,7 @@ class _ContestHistoryTabState extends ConsumerState<_ContestHistoryTab> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         alignment: Alignment.center,
@@ -536,7 +536,7 @@ class _ContestHistoryTabState extends ConsumerState<_ContestHistoryTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -658,8 +658,8 @@ class _ContestHistoryTabState extends ConsumerState<_ContestHistoryTab> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: result.isWin
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.error.withOpacity(0.1),
+                  ? AppColors.success.withValues(alpha: 0.1)
+                  : AppColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -692,7 +692,7 @@ class _ContestHistoryTabState extends ConsumerState<_ContestHistoryTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -877,7 +877,7 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -952,7 +952,7 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -985,8 +985,8 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: isUpward
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.error.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -1025,7 +1025,7 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
                   horizontalInterval: yInterval,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: AppColors.border.withOpacity(0.5),
+                      color: AppColors.border.withValues(alpha: 0.5),
                       strokeWidth: 1,
                       dashArray: [5, 5],
                     );
@@ -1112,8 +1112,8 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.primary.withOpacity(0.2),
-                          AppColors.primary.withOpacity(0.0),
+                          AppColors.primary.withValues(alpha: 0.2),
+                          AppColors.primary.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -1237,7 +1237,7 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1259,8 +1259,8 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: item.isPositive
-                          ? AppColors.success.withOpacity(0.1)
-                          : AppColors.error.withOpacity(0.1),
+                          ? AppColors.success.withValues(alpha: 0.1)
+                          : AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -1477,8 +1477,8 @@ class _McMahonScoreTabState extends ConsumerState<_McMahonScoreTab> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: result.isWin
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.error.withOpacity(0.1),
+                  ? AppColors.success.withValues(alpha: 0.1)
+                  : AppColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

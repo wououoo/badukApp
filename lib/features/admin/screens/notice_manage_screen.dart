@@ -88,7 +88,7 @@ class _NoticeManageScreenState extends ConsumerState<NoticeManageScreen> {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: notice.isImportant
-              ? AppColors.error.withOpacity(0.3)
+              ? AppColors.error.withValues(alpha: 0.3)
               : AppColors.border,
         ),
       ),
