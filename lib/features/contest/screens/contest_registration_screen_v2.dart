@@ -14,6 +14,7 @@ import '../../../data/services/notification_service_stub.dart'
     if (dart.library.io) '../../../data/services/notification_service.dart';
 import '../../../data/api/api_client.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../core/constants/region_data.dart';
 import '../../../data/models/homepage.dart';
 import '../widgets/refund_policy_section.dart';
 import '../widgets/payment_info_box.dart';
@@ -67,6 +68,7 @@ class _ContestRegistrationScreenV2State
   int _step = 0;
   bool _isForChild = false; // false: 본인 신청, true: 자녀 대리 신청
   String? _selectedRegion;
+  String? _selectedSubRegion; // 시/군/구 — 지역(시·도) 선택 후 활성화
   String? _selectedSkillLevel;
   String? _childSkillLevel;
   bool _isLoading = false;
@@ -294,6 +296,19 @@ class _ContestRegistrationScreenV2State
       _showError('필수 추가 항목을 선택해주세요.');
       return;
     }
+    // 대회별 필수입력 강제(웹과 동일) — requiredFields 지정 시 클라에서도 차단
+    if (_req('region') && (_selectedRegion == null || _selectedRegion!.trim().isEmpty)) {
+      _showError('지역(시·도)을 선택해주세요.');
+      return;
+    }
+    if (_req('subRegion') && (_selectedSubRegion == null || _selectedSubRegion!.trim().isEmpty)) {
+      _showError('시·군·구를 선택해주세요.');
+      return;
+    }
+    if (_req('academy') && _isChildCategory && _childAcademyController.text.trim().isEmpty) {
+      _showError('바둑학원을 입력해주세요.');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -315,6 +330,7 @@ class _ContestRegistrationScreenV2State
           password: _passwordController.text,
           type: 'PAIR',
           region: _selectedRegion,
+          subRegion: _selectedSubRegion,
           club: _clubController.text.trim(),
           mobileUserId: mobileUserId,
           options: _optionPayload,
@@ -337,6 +353,9 @@ class _ContestRegistrationScreenV2State
           academy: _childAcademyController.text.trim(),
           birthYear: _childBirthYearController.text.trim(),
           parentPhone: _phoneController.text.trim(),
+          // 어린이도 시/도+시/군/구 수집 (웹과 동일). 대회 required 지정 시 백엔드 강제.
+          region: _selectedRegion,
+          subRegion: _selectedSubRegion,
           mobileUserId: mobileUserId,
           options: _optionPayload,
           // 국제대회 필드 — 대회가 켠 경우에만 값이 채워진다(아니면 null → payload에서 제외).
@@ -367,8 +386,9 @@ class _ContestRegistrationScreenV2State
           // 부문에 출생 정보 설정이 있으면 전송 (YEAR_ONLY="YYYY" / FULL_DATE="YYYY-MM-DD")
           birthYear: sendBirth ? _childBirthYearController.text.trim() : null,
           parentPhone: isChildSelf ? _phoneController.text.trim() : null,
-          // 성인 부문 — 지역/클럽
-          region: isChildSelf ? null : _selectedRegion,
+          // 지역/시군구 — 성인·어린이 본인 신청 모두 수집(웹과 동일). 클럽은 성인만.
+          region: _selectedRegion,
+          subRegion: _selectedSubRegion,
           club: isChildSelf ? null : _clubController.text.trim(),
           mobileUserId: mobileUserId,
           options: _optionPayload,
@@ -519,6 +539,9 @@ class _ContestRegistrationScreenV2State
                   _buildInfoRow('부문', _selectedCategory?.categoryName ?? ''),
                   _buildInfoRow('이름', _isForChild ? _childNameController.text : _nameController.text),
                   if (_isForChild) _buildInfoRow('구분', '자녀 대리 신청'),
+                  if (_selectedRegion != null)
+                    _buildInfoRow('지역',
+                        '${_selectedRegion!}${_selectedSubRegion != null ? ' ${_selectedSubRegion!}' : ''}'),
                   _buildInfoRow('비밀번호', _passwordController.text),
                 ],
               ),
@@ -832,7 +855,13 @@ class _ContestRegistrationScreenV2State
 
   /// 1걸음 — 무엇에 나갈지. 부문이 정해져야 다음 걸음의 칸이 정해진다.
   List<Widget> _stepCategory() {
+    final notice = _homepageDetail?.registrationNotice;
     return [
+      // 신청 화면 최상단 안내(서버 주도 registrationNotice) — 설정된 대회만 표시. 웹과 동일.
+      if (notice != null && notice.trim().isNotEmpty) ...[
+        _buildRegistrationNotice(notice),
+        const SizedBox(height: 16),
+      ],
       _buildContestInfo(),
       const SizedBox(height: 24),
       if (widget.contest.groupRegistrationEnabled) ...[
@@ -848,6 +877,28 @@ class _ContestRegistrationScreenV2State
       if (_selectedCategory != null && _isTeamCategory) _buildTeamModeSelection(),
       if (_selectedCategory != null && _isPairSelfCategory) _buildPairSelfModeSelection(),
     ];
+  }
+
+  /// 신청 화면 최상단 안내 배너 (웹 registrationNotice와 동일 스타일: 노란 안내 박스)
+  Widget _buildRegistrationNotice(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        border: Border.all(color: const Color(0xFFFFE082)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13.5,
+          height: 1.6,
+          color: Color(0xFF8A5A00),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
   }
 
   /// 2걸음 — 누가 나가는지. 부문에 따라 뜨는 칸이 달라진다.
@@ -1560,6 +1611,9 @@ class _ContestRegistrationScreenV2State
   bool get _isChildCategory =>
       _selectedCategory?.contestType?.toUpperCase() == 'CHILD';
 
+  /// 대회별 추가 필수입력 여부(웹 requiredFields와 동일). 설정 안 된 대회는 전부 false.
+  bool _req(String key) => _homepageDetail?.requiredFields.contains(key) ?? false;
+
   /// 본인 신청 + 어린이 부문일 때 학교/학원/출생년도 추가 입력 섹션
   /// (자녀 대리 폼의 _buildChildInfoSection과 동일 컨트롤러 재사용 — 본인이 직접 입력)
   Widget _buildSelfChildExtraSection() {
@@ -1579,7 +1633,8 @@ class _ContestRegistrationScreenV2State
           _buildTextField(
             controller: _childAcademyController,
             label: '학원/도장',
-            hint: '학원명 (선택)',
+            required: _req('academy'),
+            hint: _req('academy') ? '학원명' : '학원명 (선택)',
           ),
           _buildBirthInputField(defaultType: 'YEAR_ONLY'),
         ],
@@ -2012,10 +2067,25 @@ class _ContestRegistrationScreenV2State
           const SizedBox(height: 14),
           _buildDropdownField(
             label: '지역',
+            required: _req('region'),
             value: _selectedRegion,
             items: _regions,
-            onChanged: (v) => setState(() => _selectedRegion = v),
+            onChanged: (v) => setState(() {
+              _selectedRegion = v;
+              _selectedSubRegion = null; // 시·도 바뀌면 시·군·구 초기화(목록 불일치 방지)
+            }),
           ),
+          // 시/군/구 — 시·도를 고른 뒤에만 노출. 대회가 required로 지정하면 백엔드가 강제한다.
+          if (_selectedRegion != null) ...[
+            const SizedBox(height: 14),
+            _buildDropdownField(
+              label: '시/군/구',
+              required: _req('subRegion'),
+              value: _selectedSubRegion,
+              items: RegionData.getCities(_selectedRegion!),
+              onChanged: (v) => setState(() => _selectedSubRegion = v),
+            ),
+          ],
           const SizedBox(height: 14),
           _buildTextField(
             controller: _clubController,
@@ -2077,8 +2147,31 @@ class _ContestRegistrationScreenV2State
           _buildTextField(
             controller: _childAcademyController,
             label: '바둑학원',
+            required: _req('academy'),
             hint: '예: OO바둑교실',
           ),
+          const SizedBox(height: 14),
+          // 지역/시군구 — 웹 어린이 폼과 동일하게 항상 수집. 대회가 required로 지정하면 백엔드가 강제.
+          _buildDropdownField(
+            label: '지역',
+            required: _req('region'),
+            value: _selectedRegion,
+            items: _regions,
+            onChanged: (v) => setState(() {
+              _selectedRegion = v;
+              _selectedSubRegion = null;
+            }),
+          ),
+          if (_selectedRegion != null) ...[
+            const SizedBox(height: 14),
+            _buildDropdownField(
+              label: '시/군/구',
+              required: _req('subRegion'),
+              value: _selectedSubRegion,
+              items: RegionData.getCities(_selectedRegion!),
+              onChanged: (v) => setState(() => _selectedSubRegion = v),
+            ),
+          ],
         ],
       ),
     );

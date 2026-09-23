@@ -17,6 +17,7 @@ class RegistrationData {
 
   // 일반부 전용
   final String? region;
+  final String? subRegion; // 시/군/구 — 대회가 required로 지정할 수 있어 타입 무관 전송
   final String? club;
 
   // 단체전 전용
@@ -52,6 +53,7 @@ class RegistrationData {
     this.address,
     this.parentPhone,
     this.region,
+    this.subRegion,
     this.club,
     this.teamName,
     this.teamMembers,
@@ -111,6 +113,15 @@ class RegistrationData {
     // 추가 옵션(티셔츠 사이즈 등) — 타입 무관 공통. 백엔드가 confirm/생성 시 저장
     if (options != null && options!.isNotEmpty) {
       data['options'] = options;
+    }
+
+    // 지역/시군구 — 대회가 required로 지정할 수 있어 타입 무관하게 값이 있으면 전송.
+    // (백엔드 requiredFields 검증이 payload 최상위 region/subRegion을 본다)
+    if (region != null && region!.trim().isNotEmpty) {
+      data['region'] = region!.trim();
+    }
+    if (subRegion != null && subRegion!.trim().isNotEmpty) {
+      data['subRegion'] = subRegion!.trim();
     }
 
     return data;

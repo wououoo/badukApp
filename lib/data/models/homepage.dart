@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// 대회 홈페이지 모델 (공개 목록용)
 class ContestHomepage {
   final int homepageId;
@@ -83,6 +85,10 @@ class HomepageDetail {
   final String? refundNoticeOverride;
   /// 대회 시작일 — 환불 정책 D-Day 계산의 기준
   final DateTime? contestStartDate;
+  /// 참가신청 화면 최상단 안내(예: 승단급 심사에 따른 참가 부문 변경). null이면 미표시. 웹과 동일.
+  final String? registrationNotice;
+  /// 대회별 추가 필수입력 필드 키(예: academy/region/subRegion). 웹 requiredFieldsList와 동일.
+  final List<String> requiredFields;
 
   HomepageDetail({
     required this.homepageId,
@@ -110,7 +116,22 @@ class HomepageDetail {
     this.paymentFeeRefundOnCancel,
     this.refundNoticeOverride,
     this.contestStartDate,
+    this.registrationNotice,
+    this.requiredFields = const [],
   });
+
+  /// requiredFields는 JSON 문자열("[...]") 또는 배열로 올 수 있어 둘 다 처리.
+  static List<String> _parseRequiredFields(dynamic raw) {
+    if (raw == null) return const [];
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    return const [];
+  }
 
   factory HomepageDetail.fromJson(Map<String, dynamic> json) {
     final homepage = json['homepage'] ?? json;
@@ -146,6 +167,9 @@ class HomepageDetail {
       contestStartDate: homepage['contestStartDate'] != null
           ? DateTime.tryParse(homepage['contestStartDate'].toString())
           : null,
+      registrationNotice: homepage['registrationNotice'] as String?,
+      requiredFields: _parseRequiredFields(
+          homepage['requiredFields'] ?? homepage['requiredFieldsList']),
     );
   }
 
