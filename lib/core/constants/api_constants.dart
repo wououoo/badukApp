@@ -5,14 +5,14 @@ class ApiConstants {
   // 사용할 서버의 주석을 해제하세요
 
   // 로컬 개발 서버 (iOS 시뮬레이터, 웹)
-  // // // // static const String baseUrl = 'http://localhost:8080/api';
-  // // // // static const String webUrl = 'http://localhost:3000';  // 개발용 React 프론트엔드
+// static const String baseUrl = 'http://localhost:8080/api';
+// static const String webUrl = 'http://localhost:3000';  // 개발용 React 프론트엔드
 
   // 로컬 개발 서버 (Android 에뮬레이터용 - 10.0.2.2는 호스트 PC의 localhost)
   // static const String baseUrl = 'http://10.0.2.2:8080/api';
   // static const String webUrl = 'http://10.0.2.2:3000';
 
-  // // 프로덕션 서버
+  // 프로덕션 서버
   static const String baseUrl = 'https://swissbaduk.org/api';
   static const String webUrl = 'https://swissbaduk.org';
 
@@ -146,5 +146,10 @@ class ApiConstants {
   static const String privacyConsentHistory = '/mobile/privacy/consent/history';
   static const String privacyConsentWithdraw = '/mobile/privacy/consent/withdraw';
   static const String privacyPolicy = '/mobile/privacy/policy';
+
+  // 주최자 운영 콘솔 엔드포인트 (MobileHostOperationController)
+  // 목록: /operation/contests, 부문: /operation/contests/{hp},
+  // MCM 운영: /operation/contests/{hp}/sections/{gr}/mcmahon[/start|/next-round|/matches/{id}/result|/finalize]
+  static const String hostOperationContests = '/mobile/host/operation/contests';
 }
-// [마지막 릴리즈] 1.1.2+67 (2026-09-23 09:50)
+// [마지막 릴리즈] 1.1.2+69 (2026-10-26 11:26)

@@ -69,6 +69,15 @@ import '../features/host/screens/contest_request_screen.dart';
 import '../features/host/screens/my_requests_screen.dart';
 import '../features/host/screens/request_detail_screen.dart';
 import '../features/host/screens/admin_requests_screen.dart';
+import '../features/host/screens/host_contests_screen.dart';
+import '../features/host/screens/host_contest_detail_screen.dart';
+import '../features/host/screens/host_mcmahon_screen.dart';
+import '../features/host/screens/host_swiss_screen.dart';
+import '../features/host/screens/host_team_swiss_screen.dart';
+import '../features/host/screens/host_full_league_screen.dart';
+import '../features/host/screens/host_team_full_league_screen.dart';
+import '../features/host/screens/host_tournament_screen.dart';
+import '../features/host/screens/host_de_screen.dart';
 import '../features/admin/screens/push_notification_screen.dart';
 import '../features/admin/screens/notice_manage_screen.dart';
 import '../data/models/portal/portal_participant.dart';
@@ -769,6 +778,89 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/host/apply',
         builder: (context, state) => const HostApplyScreen(),
+      ),
+
+      // 주최자: 대회 운영 — 내 대회 목록 (A1)
+      GoRoute(
+        path: '/host/operation',
+        builder: (context, state) => const HostContestsScreen(),
+      ),
+      // 주최자: 대회 운영 홈 — 부문 목록 (A2)
+      GoRoute(
+        path: '/host/operation/:homepageId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          return HostContestDetailScreen(homepageId: id, title: state.extra as String?);
+        },
+      ),
+      // 주최자: 맥마흔 부문 운영 (B)
+      GoRoute(
+        path: '/host/operation/:homepageId/mcmahon/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          return HostMcmahonScreen(homepageId: id, gameRoomId: gr, sortName: state.extra as String?);
+        },
+      ),
+      // 주최자: 스위스리그 부문 운영 (B)
+      GoRoute(
+        path: '/host/operation/:homepageId/swiss/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          return HostSwissScreen(homepageId: id, gameRoomId: gr, sortName: state.extra as String?);
+        },
+      ),
+      // 주최자: 단체 스위스 부문 운영 (B)
+      GoRoute(
+        path: '/host/operation/:homepageId/team-swiss/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          return HostTeamSwissScreen(homepageId: id, gameRoomId: gr, sortName: state.extra as String?);
+        },
+      ),
+      // 주최자: 풀리그 부문 운영 (B)
+      GoRoute(
+        path: '/host/operation/:homepageId/full-league/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          return HostFullLeagueScreen(homepageId: id, gameRoomId: gr, sortName: state.extra as String?);
+        },
+      ),
+      // 주최자: 단체 풀리그 부문 운영 (B) — extra는 {sortName, teamSize} Map
+      GoRoute(
+        path: '/host/operation/:homepageId/team-full-league/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          final extra = state.extra as Map?;
+          return HostTeamFullLeagueScreen(
+            homepageId: id,
+            gameRoomId: gr,
+            sortName: extra?['sortName'] as String?,
+            teamSize: (extra?['teamSize'] as int?) ?? 0,
+          );
+        },
+      ),
+      // 주최자: 싱글 토너먼트 부문 운영 (B)
+      GoRoute(
+        path: '/host/operation/:homepageId/tournament/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          return HostTournamentScreen(homepageId: id, gameRoomId: gr, sortName: state.extra as String?);
+        },
+      ),
+      // 주최자: 더블 엘리미네이션 부문 운영 (B) — 예선(조별)+본선(브래킷) 2탭
+      GoRoute(
+        path: '/host/operation/:homepageId/de/:gameRoomId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['homepageId'] ?? '') ?? 0;
+          final gr = int.tryParse(state.pathParameters['gameRoomId'] ?? '') ?? 0;
+          return HostDeScreen(homepageId: id, gameRoomId: gr, sortName: state.extra as String?);
+        },
       ),
 
       // 주최자: 대회 개최 의뢰 (전체 화면)

@@ -78,6 +78,8 @@ class _ContestRegistrationScreenV2State
   // [필수] 카카오톡·SMS 수신 — 정보통신망법 §50에 따라 개인정보 동의와 분리해 받아야 한다.
   // (콩그레스 웹은 받고 있었는데 앱만 빠져 있어 알림톡 발송 근거가 없었다)
   bool _agreedReceive = false;
+  // 각 동의 항목의 '약관 전문' 펼침 상태 (keyId -> 열림)
+  final Set<String> _openConsent = {};
 
   // 결제·환불 정책 표시용 (PaymentInfoBox 입력)
   HomepageDetail? _homepageDetail;
@@ -1231,139 +1233,154 @@ class _ContestRegistrationScreenV2State
     final selectableCategories = widget.contest.categories
         .where((c) => !c.onsiteOnly)
         .toList();
-    // 부문 많고(>12) 그룹 2개 이상이면 "부문 → 세부" 2단계, 아니면 기존 flat (다른 대회 영향 없음)
-    final groupNames = <String>[];
+
+    // 2단계(탭) 판단은 '페이지 전체' 기준: 부문 많고(>12) 그룹명 2개 이상.
+    //  이때는 타입(어린이/성인) 구분 없이 '그룹명' 하나로 탭을 묶는다(웹 UnifiedRegistration과 동일).
+    //  → 같은 그룹명이면 어린이·성인이 한 탭에 함께 나온다(예: '전국 개인부' 탭에 시니어부+최강부).
+    //  탭 조건 미달(소규모)이면 아래 타입별 flat 그대로 — 기존 동작, 영향 없음.
+    final allGroupNames = <String>[];
     for (final c in selectableCategories) {
       final g = (c.groupName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
-      if (g.isNotEmpty && !groupNames.contains(g)) groupNames.add(g);
+      if (g.isNotEmpty && !allGroupNames.contains(g)) allGroupNames.add(g);
     }
-    final useTwoStep = selectableCategories.length > 12 && groupNames.length >= 2;
+    final pageTwoStep =
+        selectableCategories.length > 12 && allGroupNames.length >= 2;
+
+    Widget body;
+    if (pageTwoStep) {
+      final tabs = [...allGroupNames];
+      final hasUngrouped =
+          selectableCategories.any((c) => (c.groupName ?? '').trim().isEmpty);
+      if (hasUngrouped) tabs.add('기타');
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _buildGroupTabsAndCards(selectableCategories, tabs),
+      );
+    } else {
+      // 소규모(탭 미사용): 기존 타입별 버킷 flat — 변경 없음
+      const typeOrder = ['CHILD', 'ADULT', 'TEAM', 'PAIR'];
+      const typeLabels = {
+        'CHILD': '어린이/청소년',
+        'ADULT': '성인(개인전)',
+        'TEAM': '성인(단체전)',
+        'PAIR': '페어(조편성)',
+      };
+      final buckets = <Widget>[];
+      for (final type in typeOrder) {
+        final cats = selectableCategories
+            .where((c) => (c.contestType ?? '').toUpperCase() == type)
+            .toList();
+        if (cats.isEmpty) continue;
+        buckets.add(_buildCategoryBucket(typeLabels[type]!, cats));
+      }
+      // typeOrder에 없는/누락된 contestType은 '기타'로 묶어 어떤 부문도 사라지지 않게 한다.
+      final known = typeOrder.toSet();
+      final others = selectableCategories
+          .where((c) => !known.contains((c.contestType ?? '').toUpperCase()))
+          .toList();
+      if (others.isNotEmpty) buckets.add(_buildCategoryBucket('기타', others));
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: buckets,
+      );
+    }
+
     return _buildSection(
       title: '참가 부문',
       required: true,
-      child: useTwoStep
-          ? _buildTwoStepCategorySelection(selectableCategories, groupNames)
-          : Column(children: selectableCategories.map(_buildCategoryTile).toList()),
+      child: body,
     );
   }
 
-  /// 2단계 부문 선택 (부문 많은 대회): 부문(그룹) 칩 → 선택 부문의 세부 카드
-  /// 부문이 많은 대회의 2단계 선택 — 학년(이름) 먼저, 그 다음 부문(그룹).
-  ///
-  /// hp19처럼 34개가 "그룹 x 학년"의 조합이면 이름이 겹친다("초등 3학년"이 여섯 군데).
-  /// 그룹을 먼저 물으면 소속(학원/방과후)과 급수 구간을 한꺼번에 판단해야 하지만,
-  /// 학년을 먼저 물으면 확실히 아는 것부터 짚고 어려운 판단은 뒤로 간다.
-  Widget _buildTwoStepCategorySelection(
-      List<ContestCategory> cats, List<String> groupNames) {
-    // 1단계 후보 = 학년(이름). 표기 흔들림을 줄이려 공백만 정규화한다.
-    final names = <String>[];
+  /// contestType 버킷 하나 렌더 (웹 unified-category-group 대응).
+  /// 버킷 부문이 많고(>12) group_name이 2개 이상이면 "group_name 탭 → 카드" 2단계,
+  /// 그 외엔 flat(카드마다 group_name 라벨이 이미 붙는다). 웹과 동일한 기준.
+  Widget _buildCategoryBucket(String label, List<ContestCategory> cats) {
+    final subGroups = <String>[];
     for (final c in cats) {
-      final n = (c.categoryName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
-      if (n.isNotEmpty && !names.contains(n)) names.add(n);
+      final g = (c.groupName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (g.isNotEmpty && !subGroups.contains(g)) subGroups.add(g);
     }
+    final useTwoStep = cats.length > 12 && subGroups.length >= 2;
 
-    final filtered = cats
-        .where((c) =>
-            (c.categoryName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim() ==
-            _selectedGroupName)
-        .toList();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          if (useTwoStep)
+            ..._buildGroupTabsAndCards(cats, subGroups)
+          else
+            ...cats.map(_buildCategoryTile),
+        ],
+      ),
+    );
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 1단계: 학년 — 세로 카드로 세운다. 칩으로 가로 나열하면 뒤쪽이 화면 밖으로 밀린다.
-        ...names.map((n) {
-          final sel = _selectedGroupName == n;
-          final count = cats
-              .where((c) =>
-                  (c.categoryName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim() == n)
-              .length;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedGroupName = n),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                decoration: BoxDecoration(
-                  color: sel ? AppColors.primary.withValues(alpha: 0.08) : AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: sel ? AppColors.primary : AppColors.border,
-                    width: sel ? 1.5 : 1,
-                  ),
+  /// 버킷 안 2단계: group_name 탭(가로 wrap) → 선택한 group_name의 세부 카드.
+  /// 웹과 동일하게 선택 상태(_selectedGroupName)는 화면 전체에서 하나만 유지한다.
+  List<Widget> _buildGroupTabsAndCards(
+      List<ContestCategory> cats, List<String> subGroups) {
+    final filtered = cats.where((c) {
+      final g = (c.groupName ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+      return (g.isEmpty ? '기타' : g) == _selectedGroupName;
+    }).toList();
+    return [
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: subGroups.map((g) {
+          final sel = _selectedGroupName == g;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedGroupName = g),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: sel
+                    ? AppColors.primary.withValues(alpha: 0.10)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: sel ? AppColors.primary : AppColors.border,
+                  width: sel ? 1.5 : 1,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        n,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: sel ? AppColors.primary : AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    // 그 학년 안에 몇 개가 있는지 — 다음 걸음의 크기를 미리 알려준다
-                    Text(
-                      '$count',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: sel ? AppColors.primary : AppColors.textTertiary,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      sel ? Icons.check_circle : Icons.chevron_right,
-                      size: 18,
-                      color: sel ? AppColors.primary : AppColors.textTertiary,
-                    ),
-                  ],
+              ),
+              child: Text(
+                g,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
+                  color: sel ? AppColors.primary : AppColors.textPrimary,
                 ),
               ),
             ),
           );
-        }),
-        const SizedBox(height: 6),
-        // 2단계: 그 학년 안의 부문(그룹). 급수 조건이 함께 보여야 자기 자리를 찾는다.
-        if (_selectedGroupName == null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text('먼저 위에서 학년을 선택해주세요.',
-                  style: TextStyle(fontSize: 14, color: AppColors.textTertiary)),
-            ),
-          )
-        else ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 10),
-            child: Row(
-              children: [
-                Text(
-                  _selectedGroupName!,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                Icon(Icons.chevron_right, size: 15, color: AppColors.textTertiary),
-                Text(
-                  '부문 선택',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
+        }).toList(),
+      ),
+      const SizedBox(height: 12),
+      // 웹과 동일: 그룹 미선택이면 안내, 선택되면 그 그룹의 카드(없으면 빈 목록).
+      if (_selectedGroupName == null)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            '먼저 위에서 부문을 선택해주세요.',
+            style: TextStyle(fontSize: 13.5, color: AppColors.textTertiary),
           ),
-          ...filtered.map(_buildCategoryTile),
-        ],
-      ],
-    );
+        )
+      else
+        ...filtered.map(_buildCategoryTile),
+    ];
   }
 
   /// 부문 카드 1개 (flat/2단계 공용) — 기존 인라인 타일을 함수화(출력 동일).
@@ -2596,6 +2613,47 @@ class _ContestRegistrationScreenV2State
     );
   }
 
+  // 약관 전문(全文) — 웹 UnifiedRegistration의 notice-text와 동일 기준. 더 빡세게: 항목·목적·보유기간·거부권리 명시.
+  static const String _kConsentPersonal =
+      '1. 수집하는 개인정보 항목\n'
+      '  성명, 생년월일, 연락처(휴대전화), 소속(클럽·도장명), 기력/단수\n'
+      '  (일부 부문은 학교명·보호자 정보 등 추가 항목이 포함될 수 있습니다)\n\n'
+      '2. 수집 및 이용 목적\n'
+      '  - 바둑 대회 참가자 등록 및 운영 관리\n'
+      '  - 대진 편성, 결과·수상 관리\n'
+      '  - 접수·결제·환불 및 대회 관련 안내·공지 발송\n\n'
+      '3. 보유 및 이용 기간\n'
+      '  - 수집·이용 목적(대회 참가 이력·전적·수상 기록 관리)이 달성될 때까지 보유합니다.\n'
+      '  - 목적이 달성되거나 정보주체가 삭제를 요청하면 지체 없이 파기합니다.\n'
+      '  - 관계 법령에 보존 의무가 있는 정보는 해당 기간 동안 보관합니다.\n\n'
+      '4. 동의 거부 권리 및 불이익 안내\n'
+      '  개인정보 수집·이용 동의를 거부할 권리가 있습니다. 다만 동의하지 않을 경우 '
+      '대회 참가 등록이 제한됩니다.';
+
+  static const String _kConsentThirdParty =
+      '1. 제공받는 자\n'
+      '  대회 주최·주관 단체(대한바둑협회 등) 및 대회 운영 위탁사\n\n'
+      '2. 제공하는 개인정보 항목\n'
+      '  성명, 생년월일, 연락처, 소속, 기력/단수, 참가 부문\n\n'
+      '3. 제공받는 자의 이용 목적\n'
+      '  - 대회 운영·진행 및 참가 자격 확인\n'
+      '  - 대진 편성, 결과·수상·기록 관리\n\n'
+      '4. 보유 및 이용 기간\n'
+      '  제공 목적(대회 운영·이력 관리)이 달성될 때까지 보유하며, '
+      '목적 달성 또는 정보주체의 삭제 요청 시 지체 없이 파기합니다.\n\n'
+      '5. 동의 거부 권리 및 불이익 안내\n'
+      '  제3자 제공 동의를 거부할 권리가 있습니다. 다만 동의하지 않을 경우 '
+      '대회 운영상 참가가 제한될 수 있습니다.';
+
+  static const String _kConsentReceive =
+      '정보통신망법 제50조에 따라 영리목적 광고성 정보 수신과 별개로, '
+      '대회 운영 안내 발송을 위해 아래에 동의받습니다.\n\n'
+      '- 발송 채널: 카카오톡 알림톡, 문자(SMS/LMS)\n'
+      '- 발송 내용: 접수 완료, 결제·환불, 대진·일정·장소 안내, 대회 공지 등\n'
+      '- 발송 기간: 대회 접수 시점부터 대회 종료 시까지\n\n'
+      '수신 동의를 거부할 수 있으나, 거부 시 접수·결제·일정 변경 등 '
+      '대회 운영 안내를 받지 못해 참가에 불이익이 있을 수 있습니다.';
+
   Widget _buildAgreementSection() {
     final allAgreed = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
     return Column(
@@ -2612,43 +2670,146 @@ class _ContestRegistrationScreenV2State
               _agreedToTerms = v ?? false;
             });
           },
-          title: '전체 동의',
+          title: '전체 동의 (아래 필수 항목 모두 포함)',
           isBold: true,
         ),
         const SizedBox(height: 8),
         // [필수] 개인정보 수집·이용 동의
-        _buildConsentCheckbox(
+        _buildConsentBlock(
+          keyId: 'personal',
           value: _agreedPersonalInfo,
           onChanged: (v) => setState(() {
-            _agreedPersonalInfo = v ?? false;
+            _agreedPersonalInfo = v;
             _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
           }),
           title: '[필수] 개인정보 수집·이용 동의',
-          subtitle: '이름, 연락처, 기력 등을 대회 운영 목적으로 수집합니다.',
+          summary: '이름·생년월일·연락처·소속·기력 등을 대회 운영 목적으로 수집합니다.',
+          fullText: _kConsentPersonal,
         ),
         const SizedBox(height: 8),
         // [필수] 제3자 제공 동의
-        _buildConsentCheckbox(
+        _buildConsentBlock(
+          keyId: 'third',
           value: _agreedThirdParty,
           onChanged: (v) => setState(() {
-            _agreedThirdParty = v ?? false;
+            _agreedThirdParty = v;
             _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
           }),
-          title: '[필수] 대회 주최측 제3자 제공 동의',
-          subtitle: '대회 운영을 위해 참가자 정보를 주최측에 제공합니다.',
+          title: '[필수] 제3자(대회 주최·주관) 제공 동의',
+          summary: '대회 운영을 위해 참가자 정보를 주최·주관 단체에 제공합니다.',
+          fullText: _kConsentThirdParty,
         ),
         const SizedBox(height: 8),
         // [필수] 카카오톡·SMS 수신 (정보통신망법 §50 — 개인정보 동의와 별도로 받아야 함)
-        _buildConsentCheckbox(
+        _buildConsentBlock(
+          keyId: 'receive',
           value: _agreedReceive,
           onChanged: (v) => setState(() {
-            _agreedReceive = v ?? false;
+            _agreedReceive = v;
             _agreedToTerms = _agreedPersonalInfo && _agreedThirdParty && _agreedReceive;
           }),
           title: '[필수] 카카오톡·SMS 수신 동의',
-          subtitle: '접수·결제·환불·일정 변경 안내를 알림톡 및 문자로 발송합니다.',
+          summary: '접수·결제·환불·일정 변경 안내를 알림톡 및 문자로 발송합니다.',
+          fullText: _kConsentReceive,
         ),
       ],
+    );
+  }
+
+  // 동의 1건 — 체크박스 + 요약 + '약관 전문 보기' 펼침(전문 full text).
+  //  기록 API(_recordConsent)는 체크값(동의 여부)만 전송하므로 UI만 강화 — 서버 계약 무변경.
+  Widget _buildConsentBlock({
+    required String keyId,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required String title,
+    required String summary,
+    required String fullText,
+  }) {
+    final open = _openConsent.contains(keyId);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: value ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: value ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: value,
+                  onChanged: (v) => onChanged(v ?? false),
+                  activeColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(!value),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      const SizedBox(height: 2),
+                      Text(summary,
+                          style: TextStyle(fontSize: 12, color: AppColors.textTertiary, height: 1.3)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 34, top: 6),
+            child: GestureDetector(
+              onTap: () => setState(() {
+                if (open) {
+                  _openConsent.remove(keyId);
+                } else {
+                  _openConsent.add(keyId);
+                }
+              }),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(open ? '약관 전문 닫기' : '약관 전문 보기',
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline)),
+                  Icon(open ? Icons.expand_less : Icons.expand_more, size: 16, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+          if (open)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(left: 34, top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: SelectableText(fullText,
+                  style: TextStyle(fontSize: 12.5, height: 1.6, color: AppColors.textSecondary)),
+            ),
+        ],
+      ),
     );
   }
 

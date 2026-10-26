@@ -313,6 +313,72 @@ void main() {
     });
   });
 
+  group('조건부 노출(showWhen)', () {
+    // 셔틀 '이용' 선택 시에만 '탑승 희망 편'이 뜨고, 그때만 필수.
+    List<Map<String, dynamic>> shuttleDefs() => [
+          {
+            'key': 'shuttle',
+            'label': '셔틀버스 이용 여부',
+            'type': 'SINGLE_SELECT',
+            'required': true,
+            'choices': [
+              {'value': 'yes', 'label': '이용'},
+              {'value': 'no', 'label': '미이용'},
+            ],
+          },
+          {
+            'key': 'shuttle_runs',
+            'label': '탑승 희망 편',
+            'type': 'MULTI_SELECT',
+            'required': true,
+            'showWhen': {
+              'key': 'shuttle',
+              'values': ['yes'],
+            },
+            'choices': [
+              {'value': 'sat_go', 'label': '[토] 가는 편'},
+              {'value': 'sat_back', 'label': '[토] 오는 편'},
+            ],
+          },
+        ];
+
+    testWidgets('조건 미충족이면 숨고, 충족하면 노출+필수', (tester) async {
+      final r = await pump(tester, shuttleDefs());
+
+      // shuttle 미선택 → 회차 숨김
+      expect(find.text('[토] 가는 편'), findsNothing);
+
+      // 이용 선택 → 회차 노출, 회차 미선택이라 아직 invalid
+      await tester.tap(find.text('이용'));
+      await tester.pump();
+      expect(find.text('[토] 가는 편'), findsOneWidget);
+      expect(r.valid, isFalse);
+
+      // 회차 선택 → 통과
+      await tester.tap(find.text('[토] 가는 편'));
+      await tester.pump();
+      expect(r.valid, isTrue);
+    });
+
+    testWidgets('숨겨지면 이전 선택값이 제출에서 빠지고 필수도 면제', (tester) async {
+      final r = await pump(tester, shuttleDefs());
+
+      await tester.tap(find.text('이용'));
+      await tester.pump();
+      await tester.tap(find.text('[토] 오는 편'));
+      await tester.pump();
+      expect(entryOf(r.payload, 'shuttle_runs')!['values'], ['sat_back']);
+
+      // 미이용으로 전환 → 회차 숨김 + 값 비움 + 회차 필수 면제
+      await tester.tap(find.text('미이용'));
+      await tester.pump();
+      expect(find.text('[토] 오는 편'), findsNothing);
+      final e = entryOf(r.payload, 'shuttle_runs');
+      expect(e == null || (e['values'] as List).isEmpty, isTrue);
+      expect(r.valid, isTrue);
+    });
+  });
+
   testWidgets('정의가 없으면 아무것도 안 그린다', (tester) async {
     await pump(tester, []);
     expect(find.byType(TextField), findsNothing);

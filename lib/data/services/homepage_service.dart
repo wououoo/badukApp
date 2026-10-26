@@ -51,6 +51,21 @@ class HomepageService {
     }
   }
 
+  /// 서약/동의 서류 조회 (type=AGREEMENT 옵션 렌더용)
+  /// GET /api/agreement/document/{code}
+  Future<Map<String, dynamic>?> getAgreementDocument(String code) async {
+    try {
+      final response = await _apiClient.get('/agreement/document/${Uri.encodeComponent(code)}');
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['document'] is Map) {
+        return Map<String, dynamic>.from(data['document'] as Map);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// 홈페이지 접근 가능 여부 확인
   /// GET /api/contest-homepage/{homepageId}/accessible
   Future<bool> isHomepageAccessible(int homepageId) async {

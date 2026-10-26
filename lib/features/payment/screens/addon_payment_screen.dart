@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/services/homepage_service.dart';
 import '../../../data/services/payment_service.dart';
 import '../../contest/widgets/registration_option_selector.dart';
+import '../widgets/payment_terms_consent.dart';
 
 /// 추가결제 화면 — 이미 신청을 마친 건에 유료 항목(숙박 등)을 더 산다.
 ///
@@ -35,6 +36,7 @@ class _AddonPaymentScreenState extends State<AddonPaymentScreen> {
   bool _loading = true;
   bool _submitting = false;
   String? _error;
+  bool _payTermsAgreed = false; // 결제 전 필수 동의(결제·환불/전자금융)
 
   /// 유료 선택지가 하나라도 있는 옵션 정의만 남긴 목록
   List<Map<String, dynamic>> _paidDefs = [];
@@ -220,6 +222,10 @@ class _AddonPaymentScreenState extends State<AddonPaymentScreen> {
                               setState(() => _payload = payload);
                             },
                           ),
+                          const SizedBox(height: 16),
+                          PaymentTermsConsent(
+                            onChanged: (v) => setState(() => _payTermsAgreed = v),
+                          ),
                         ],
                       ),
                     ),
@@ -266,10 +272,12 @@ class _AddonPaymentScreenState extends State<AddonPaymentScreen> {
                       height: 48,
                       child: ElevatedButton(
                         onPressed:
-                            (_submitting || optionFee <= 0) ? null : _submit,
+                            (_submitting || optionFee <= 0 || !_payTermsAgreed) ? null : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                          disabledForegroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -281,8 +289,9 @@ class _AddonPaymentScreenState extends State<AddonPaymentScreen> {
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white),
                               )
-                            : const Text('결제하기',
-                                style: TextStyle(
+                            : Text(
+                                (optionFee > 0 && !_payTermsAgreed) ? '필수 약관에 동의해 주세요' : '결제하기',
+                                style: const TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),

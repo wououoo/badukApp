@@ -10,6 +10,7 @@ import '../../../data/services/notification_service_stub.dart'
     if (dart.library.io) '../../../data/services/notification_service.dart';
 import '../../../data/models/payment.dart';
 import '../../../core/error/error_handler.dart';
+import '../widgets/payment_terms_consent.dart';
 
 /// 참가비 결제 화면(개편본).
 ///
@@ -51,6 +52,9 @@ class _PaymentScreenV2State extends ConsumerState<PaymentScreenV2> {
   final _homepageService = HomepageService();
   bool _isProcessing = false;
 
+  // 결제 시점 필수 동의(결제·환불 규정 + 전자금융·결제대행) — 모두 체크해야 계좌 발급 가능.
+  bool _payTermsAgreed = false;
+
   /// 가상계좌 입금 기한(분). 서버 상수와 같은 값이어야 한다.
   /// 서버: PaymentController.VIRTUAL_ACCOUNT_VALID_MINUTES
   static const int _dueMinutes = 30;
@@ -59,6 +63,7 @@ class _PaymentScreenV2State extends ConsumerState<PaymentScreenV2> {
   Widget build(BuildContext context) {
     final paymentState = ref.watch(paymentProvider);
     final busy = _isProcessing || paymentState.isLoading;
+    final agreedAll = _payTermsAgreed; // 필수 동의 모두 체크해야 결제 가능
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -90,6 +95,8 @@ class _PaymentScreenV2State extends ConsumerState<PaymentScreenV2> {
             _buildWhatFor(),
             const SizedBox(height: 14),
             _buildHowItWorks(),
+            const SizedBox(height: 14),
+            PaymentTermsConsent(onChanged: (v) => setState(() => _payTermsAgreed = v)),
             if (paymentState.errorMessage != null) ...[
               const SizedBox(height: 14),
               _buildError(paymentState.errorMessage!),
@@ -103,7 +110,7 @@ class _PaymentScreenV2State extends ConsumerState<PaymentScreenV2> {
           child: SizedBox(
             height: 54,
             child: ElevatedButton(
-              onPressed: busy ? null : _processPayment,
+              onPressed: (busy || !agreedAll) ? null : _processPayment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -124,7 +131,9 @@ class _PaymentScreenV2State extends ConsumerState<PaymentScreenV2> {
                       ),
                     )
                   : Text(
-                      '${_formatNumber(widget.amount)}원 계좌 발급받기',
+                      agreedAll
+                          ? '${_formatNumber(widget.amount)}원 계좌 발급받기'
+                          : '필수 약관에 동의해 주세요',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,

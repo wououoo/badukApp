@@ -608,6 +608,13 @@ class ProfileScreenV2 extends ConsumerWidget {
               child: Column(
                 children: [
                   _buildMenuItem(
+                    icon: Icons.sports_esports_outlined,
+                    title: '대회 운영',
+                    subtitle: '체크인·대진·결과·순위 진행',
+                    onTap: () => context.push('/host/operation'),
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
                     icon: Icons.add_circle_outline,
                     title: '대회 개최 의뢰',
                     subtitle: '홈페이지 제작 요청',
