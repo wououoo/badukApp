@@ -19,6 +19,8 @@ import '../../../data/models/homepage.dart';
 import '../widgets/refund_policy_section.dart';
 import '../widgets/payment_info_box.dart';
 import '../widgets/registration_option_selector.dart';
+import '../widgets/document_upload_section.dart';
+import '../../../data/services/document_service.dart';
 
 /// 대회 참가신청 화면
 class ContestRegistrationScreenV2 extends ConsumerStatefulWidget {
@@ -89,6 +91,17 @@ class _ContestRegistrationScreenV2State
   List<Map<String, dynamic>> _optionPayload = [];
   bool _optionsValid = true;
 
+  // 제출 서류(재학증명서 등) — 서류를 받는 대회·부문에서만 '제출 서류' 걸음이 생긴다.
+  List<DocumentRequirement> _docRequirements = [];
+  final DocumentStagingState _docState = DocumentStagingState();
+
+  /// 지금 고른 부문에 해당하는 요구 서류
+  List<DocumentRequirement> get _applicableDocs {
+    final catId = _selectedCategory?.id;
+    if (catId == null) return const [];
+    return _docRequirements.where((r) => r.appliesTo(catId)).toList();
+  }
+
   // ===== 국제대회(콩그레스) 전용 =====
   // 대회가 켜둔 경우에만 화면에 뜬다. 기존 대회는 플래그가 false라 아무 변화가 없다.
   final _nameEnController = TextEditingController();
@@ -130,6 +143,28 @@ class _ContestRegistrationScreenV2State
     _initFromUserProfile();
     _loadHomepageDetail();
     _loadOptions();
+    _loadDocRequirements();
+  }
+
+  /// 요구 서류 로드. 실패하면(구버전 서버 등) 서류 걸음 없이 진행 — 필수 서류가 있으면 서버가 안내 문장으로 막는다.
+  Future<void> _loadDocRequirements() async {
+    try {
+      final reqs = await DocumentService().getRequirements(widget.homepageId);
+      if (!mounted) return;
+      setState(() => _docRequirements = reqs);
+    } catch (e) {
+      debugPrint('[제출 서류 조회 실패] $e');
+    }
+  }
+
+  /// 서류 걸음에서 넘어가도 되는지 — 안 되면 안내 문장
+  String? _documentProblem() {
+    final docs = _applicableDocs;
+    if (docs.isEmpty) return null;
+    if (_docState.isUploading) return '파일을 올리는 중입니다. 잠시만 기다려 주세요.';
+    final missing = _docState.firstMissingRequired(docs);
+    if (missing != null) return "필수 서류 '${missing.title}'을(를) 올려 주세요.";
+    return null;
   }
 
   /// 신청 가능한 부문이 하나뿐이면 미리 선택해 둔다.
@@ -311,6 +346,12 @@ class _ContestRegistrationScreenV2State
       _showError('바둑학원을 입력해주세요.');
       return;
     }
+    final docProblem = _documentProblem();
+    if (docProblem != null) {
+      _showError(docProblem);
+      return;
+    }
+    final docTokens = _docState.tokensFor(_applicableDocs);
 
     setState(() => _isLoading = true);
 
@@ -340,6 +381,7 @@ class _ContestRegistrationScreenV2State
           nameEn: widget.contest.requireNameEn ? _nameEnController.text.trim() : null,
           nationality: widget.contest.requireNameEn ? _nationality : null,
           role: widget.contest.guestEnabled ? _role : null,
+          documentTokens: docTokens.isEmpty ? null : docTokens,
         );
       } else if (_isForChild) {
         // 자녀 대리 신청
@@ -364,6 +406,7 @@ class _ContestRegistrationScreenV2State
           nameEn: widget.contest.requireNameEn ? _nameEnController.text.trim() : null,
           nationality: widget.contest.requireNameEn ? _nationality : null,
           role: widget.contest.guestEnabled ? _role : null,
+          documentTokens: docTokens.isEmpty ? null : docTokens,
         );
       } else {
         // 본인 신청 — type은 선택한 부문의 contestType을 그대로 따름
@@ -398,6 +441,7 @@ class _ContestRegistrationScreenV2State
           nameEn: widget.contest.requireNameEn ? _nameEnController.text.trim() : null,
           nationality: widget.contest.requireNameEn ? _nationality : null,
           role: widget.contest.guestEnabled ? _role : null,
+          documentTokens: docTokens.isEmpty ? null : docTokens,
         );
       }
 
@@ -746,6 +790,7 @@ class _ContestRegistrationScreenV2State
                     children: [
                       if (_currentStepKey == '부문 선택') ..._stepCategory(),
                       if (_currentStepKey == '참가자 정보') ..._stepParticipant(),
+                      if (_currentStepKey == '제출 서류') ..._stepDocuments(),
                       if (_currentStepKey == '추가 항목') ..._stepOptions(),
                       if (_currentStepKey == '확인·결제') ..._stepConfirm(),
                     ],
@@ -769,6 +814,7 @@ class _ContestRegistrationScreenV2State
   List<String> get _stepLabels => [
         '부문 선택',
         '참가자 정보',
+        if (_applicableDocs.isNotEmpty) '제출 서류',
         if (_hasOptionStep) '추가 항목',
         '확인·결제',
       ];
@@ -788,6 +834,8 @@ class _ContestRegistrationScreenV2State
         return '어느 부문에 나가시나요?';
       case '참가자 정보':
         return '누가 참가하시나요?';
+      case '제출 서류':
+        return '필요한 서류를 올려주세요';
       case '추가 항목':
         return '더 필요한 것이 있나요?';
       default:
@@ -933,6 +981,24 @@ class _ContestRegistrationScreenV2State
       ],
       const SizedBox(height: 24),
       _buildPasswordSection(),
+    ];
+  }
+
+  /// 서류 걸음(있을 때) — 재학증명서 등. 고르는 즉시 서버에 임시로 올리고 제출 때 연결된다.
+  List<Widget> _stepDocuments() {
+    return [
+      _buildSection(
+        title: '제출 서류',
+        subtitle: '${_selectedCategory?.categoryName ?? ''} 부문에 필요한 서류입니다',
+        child: DocumentUploadSection(
+          homepageId: widget.homepageId,
+          requirements: _applicableDocs,
+          state: _docState,
+          onChanged: () {
+            if (mounted) setState(() {});
+          },
+        ),
+      ),
     ];
   }
 
@@ -1167,6 +1233,12 @@ class _ContestRegistrationScreenV2State
     } else if (key == '참가자 정보') {
       // 이 걸음에 그려진 칸만 검사된다. 다른 걸음의 칸은 아직 트리에 없다.
       if (!(_formKey.currentState?.validate() ?? false)) return;
+    } else if (key == '제출 서류') {
+      final problem = _documentProblem();
+      if (problem != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(problem)));
+        return;
+      }
     }
     setState(() => _step += 1);
   }

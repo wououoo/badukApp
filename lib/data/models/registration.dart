@@ -39,6 +39,10 @@ class RegistrationData {
   /// GUEST 처리는 백엔드 PaymentService가 담당한다(참가비 0·정원 제외).
   final String? role;
 
+  /// 제출 서류 임시 업로드 토큰 {요구서류id: [토큰...]} — 서류를 받는 부문에서만 채워진다.
+  /// 서버가 신청(무료) 또는 결제 준비(유료) 때 필수 서류를 확인하고, 신청이 생기면 파일을 연결한다.
+  final Map<String, List<String>>? documentTokens;
+
   RegistrationData({
     required this.homepageId,
     required this.categoryId,
@@ -64,6 +68,7 @@ class RegistrationData {
     this.nameEn,
     this.nationality,
     this.role,
+    this.documentTokens,
   });
 
   Map<String, dynamic> toJson() {
@@ -122,6 +127,11 @@ class RegistrationData {
     }
     if (subRegion != null && subRegion!.trim().isNotEmpty) {
       data['subRegion'] = subRegion!.trim();
+    }
+
+    // 제출 서류 토큰 — 값이 있을 때만 보낸다(서류 없는 대회 payload는 기존과 완전히 동일).
+    if (documentTokens != null && documentTokens!.isNotEmpty) {
+      data['documentTokens'] = documentTokens;
     }
 
     return data;

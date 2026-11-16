@@ -64,10 +64,22 @@ class _RegistrationOptionSelectorState
     // 수정 프리필
     if (widget.initial != null) {
       widget.initial!.forEach((k, v) {
+        // 수량 프리필 — 유료옵션(숙박 등)을 그대로 되돌려 보내야 금액가드에 안 걸린다.
+        final q = <String, int>{};
+        final rawQ = v['quantities'];
+        if (rawQ is Map) {
+          rawQ.forEach((key, val) {
+            final n = (val is num)
+                ? val.toInt()
+                : (int.tryParse(val.toString()) ?? 1);
+            if (n > 1) q[key.toString()] = n;
+          });
+        }
         _sel[k] = {
           'values':
               List<String>.from((v['values'] ?? []).map((e) => e.toString())),
           'text': (v['text'] ?? '').toString(),
+          'quantities': q,
         };
       });
     }

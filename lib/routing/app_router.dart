@@ -106,6 +106,7 @@ import '../features/calendar/screens/contest_calendar_screen.dart';
 // import '../features/board_analysis/screens/board_capture_screen.dart'; // AI 계가 개발중
 import '../data/providers/auth_provider.dart';
 import '../data/services/contest_service.dart';
+import '../features/profile/screens/my_documents_screen.dart';
 
 /// 인증 상태 변화를 감지하는 Listenable
 class AuthNotifierListenable extends ChangeNotifier {
@@ -658,6 +659,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             amount: extra['amount'] as int,
             homepageId: extra['homepageId'] as int?,
             contestStartDate: extra['contestStartDate'] as DateTime?,
+          );
+        },
+      ),
+
+      // 내 참가신청 → 제출 서류 (보기·추가·교체)
+      GoRoute(
+        path: '/my-documents/:registrationId',
+        builder: (context, state) {
+          final extra = (state.extra as Map<String, dynamic>?) ?? const {};
+          return MyDocumentsScreen(
+            registrationId: int.parse(state.pathParameters['registrationId']!),
+            contestName: (extra['contestName'] as String?) ?? '',
+            categoryName: (extra['categoryName'] as String?) ?? '',
           );
         },
       ),

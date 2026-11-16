@@ -487,6 +487,9 @@ class ContestDetail {
   /// 구버전 서버(이 키가 없는 경우)에선 기존 개별 필드로 조립한 값이 들어간다.
   final List<ContestInfoRow> infoRows;
 
+  /// 공문형(promotion) 대회 본문 JSON 원문 — 있으면 정보 탭에 번호 섹션·표로 그린다. 없으면 null.
+  final String? contentSections;
+
   ContestDetail({
     required this.id,
     required this.name,
@@ -521,6 +524,7 @@ class ContestDetail {
     this.requireNameEn = false,
     this.groupRegistrationEnabled = false,
     this.externalSiteUrl,
+    this.contentSections,
   });
 
   /// 첫 번째 문의 담당자 ID
@@ -585,6 +589,9 @@ class ContestDetail {
       groupRegistrationEnabled: json['groupRegistrationEnabled'] == true,
       externalSiteUrl: (json['externalSiteUrl'] as String?)?.trim().isEmpty == false
           ? json['externalSiteUrl'] as String
+          : null,
+      contentSections: (json['contentSections'] as String?)?.trim().isEmpty == false
+          ? json['contentSections'] as String
           : null,
     );
   }

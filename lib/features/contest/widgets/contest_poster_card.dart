@@ -5,6 +5,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../data/models/contest.dart';
 import '../../../data/providers/user_provider.dart';
 import 'contest_status_badge.dart';
+import 'generated_contest_cover.dart';
 
 /// 포스터 모드 대회 카드 (배경 이미지 + 오버레이 텍스트)
 class ContestPosterCard extends ConsumerWidget {
@@ -48,15 +49,15 @@ class ContestPosterCard extends ConsumerWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // 배경 (포스터 이미지 or 그라데이션)
+            // 배경 (포스터 이미지 or 자동 생성 커버)
             if (hasPoster)
               Image.network(
                 _getFullPosterUrl(contest.posterUrl!),
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildGradientBackground(),
+                errorBuilder: (_, __, ___) => GeneratedContestCover(contest: contest),
               )
             else
-              _buildGradientBackground(),
+              GeneratedContestCover(contest: contest),
 
             // 하단 오버레이
             Positioned(
@@ -159,54 +160,6 @@ class ContestPosterCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  /// 포스터가 없을 때 대회 유형별 그라데이션 배경 + 브랜드 로고 워터마크.
-  /// (기존엔 흐릿한 대회명만 있어 "텅 빈" 느낌 → 로고 심볼로 채워 의도된 화면으로)
-  Widget _buildGradientBackground() {
-    // 상태에 따라 색상 변경
-    final colors = _getGradientColors();
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
-        ),
-      ),
-      child: Center(
-        child: Padding(
-          // 하단 오버레이(대회명·날짜) 영역을 피해 살짝 위로
-          padding: const EdgeInsets.only(bottom: 40),
-          child: Opacity(
-            opacity: 0.9,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Image.asset(
-                'assets/images/splash_logo.png',
-                width: 44,
-                height: 44,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Color> _getGradientColors() {
-    final status = contest.status?.toLowerCase() ?? '';
-    if (status.contains('진행') || status == 'live') {
-      return [const Color(0xFF1B5E20), const Color(0xFF2E7D32)];
-    } else if (status.contains('종료') || status == 'closed') {
-      return [const Color(0xFF37474F), const Color(0xFF546E7A)];
-    }
-    return [const Color(0xFF283593), const Color(0xFF3949AB)];
   }
 
   String _formatShortDate(DateTime? date) {

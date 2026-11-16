@@ -18,6 +18,7 @@ import '../../../data/providers/user_provider.dart';
 import '../widgets/contest_status_badge.dart';
 import '../widgets/contest_photos_tab.dart';
 import '../widgets/refund_policy_section.dart';
+import '../widgets/promotion_content_view.dart';
 import '../../live/widgets/live_sort_content.dart';
 import '../../live/widgets/live_sort_content_v2.dart';
 import '../../live/widgets/live_de_content.dart';
@@ -591,6 +592,11 @@ class _ContestDetailScreenV2State extends ConsumerState<ContestDetailScreenV2>
           // 대회 정보 카드
           _buildInfoCard(contest),
           const SizedBox(height: 20),
+          // 공문형 대회 본문(개요·부문별 개요·일정표·제출 서류 등) — 웹 공고와 같은 내용
+          if (contest.contentSections != null) ...[
+            PromotionContentView(raw: contest.contentSections),
+            const SizedBox(height: 20),
+          ],
           // 대기 방법 (있는 경우)
           if (contest.gameMethods.isNotEmpty) ...[
             _buildGameMethodsSection(contest),
@@ -1423,33 +1429,7 @@ class _ContestDetailScreenV2State extends ConsumerState<ContestDetailScreenV2>
       },
           ),
         ),
-        // 참가신청 버튼 + 문의 버튼
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Row(
-            children: [
-              // 주최자 채팅 - 일단 비활성
-              // if (contest.hasChatManager)
-              //   Padding(
-              //     padding: const EdgeInsets.only(right: 10),
-              //     child: SizedBox(
-              //       width: 56,
-              //       height: 56,
-              //       child: OutlinedButton(
-              //         onPressed: () => _openChatWithHost(contest),
-              //         style: OutlinedButton.styleFrom(
-              //           padding: EdgeInsets.zero,
-              //           side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
-              //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              //         ),
-              //         child: Icon(Icons.chat_bubble_outline, color: AppColors.primary, size: 22),
-              //       ),
-              //     ),
-              //   ),
-              Expanded(child: _buildApplyButton(contest)),
-            ],
-          ),
-        ),
+        // 참가신청 버튼은 하단 고정 바(_buildStickyApplyBar) 하나만 쓴다 — 여기 두면 부문 탭에서 버튼이 두 개로 보였다.
       ],
     );
   }

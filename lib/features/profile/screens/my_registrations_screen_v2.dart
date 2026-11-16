@@ -562,6 +562,11 @@ class _MyRegistrationsScreenV2State extends ConsumerState<MyRegistrationsScreenV
                     ],
                   ),
                 ],
+                // 제출 서류 상태 — 서류를 받는 대회의 신청에만 서버가 documents를 준다
+                if (_docSummaryText(reg) != null) ...[
+                  const SizedBox(height: 10),
+                  _buildDocChip(reg),
+                ],
                 // 반상을 다른 건이 가져간 입금 대기 건은 계좌를 여기서 보여준다
                 if (urgent && reg['virtualAccount'] != null) ...[
                   const SizedBox(height: 11),
@@ -978,6 +983,12 @@ class _MyRegistrationsScreenV2State extends ConsumerState<MyRegistrationsScreenV
               _buildOptionsSection(_optionsOf(reg)),
             ],
 
+            // 제출 서류 — 서류를 받는 대회의 신청에만
+            if (reg['documents'] is Map) ...[
+              const SizedBox(height: 16),
+              _buildDocumentsBlock(context, bottomSheetContext, reg, registrationId),
+            ],
+
             // 환불 내역 표시
             if (hasRefund) ...[
               const SizedBox(height: 16),
@@ -1199,6 +1210,113 @@ class _MyRegistrationsScreenV2State extends ConsumerState<MyRegistrationsScreenV
         ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 서류 요약 한 줄 (서류 없는 신청이면 null)
+  String? _docSummaryText(Map<String, dynamic> reg) {
+    final d = reg['documents'];
+    if (d is! Map) return null;
+    final total = (d['total'] as num?)?.toInt() ?? 0;
+    if (total == 0) return null;
+    final submitted = (d['submitted'] as num?)?.toInt() ?? 0;
+    final needsFix = (d['needsFix'] as num?)?.toInt() ?? 0;
+    final rejected = (d['rejected'] as num?)?.toInt() ?? 0;
+    final missing = (d['missingRequired'] as num?)?.toInt() ?? 0;
+    final confirmed = (d['confirmed'] as num?)?.toInt() ?? 0;
+    if (needsFix > 0 || rejected > 0) return '서류 보완 요청 ${needsFix + rejected}건';
+    if (missing > 0) return '필수 서류 $missing건 미제출';
+    if (confirmed >= total) return '서류 확인 완료';
+    return '서류 $submitted/$total 제출';
+  }
+
+  /// 손이 가야 하는 상태(보완·미제출)면 강조색
+  bool _docNeedsAction(Map<String, dynamic> reg) {
+    final d = reg['documents'];
+    if (d is! Map) return false;
+    return ((d['needsFix'] as num?)?.toInt() ?? 0) > 0 ||
+        ((d['rejected'] as num?)?.toInt() ?? 0) > 0 ||
+        ((d['missingRequired'] as num?)?.toInt() ?? 0) > 0;
+  }
+
+  Widget _buildDocChip(Map<String, dynamic> reg) {
+    final action = _docNeedsAction(reg);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: action ? AppColors.statusSoonBg : AppColors.background,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: action ? AppColors.warning.withValues(alpha: 0.5) : AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.description_outlined, size: 14,
+              color: action ? AppColors.statusSoonText : AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text(
+            _docSummaryText(reg) ?? '',
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: action ? AppColors.statusSoonText : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentsBlock(
+    BuildContext context,
+    BuildContext sheetContext,
+    Map<String, dynamic> reg,
+    int registrationId,
+  ) {
+    final action = _docNeedsAction(reg);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: action ? AppColors.statusSoonBg : AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: action ? AppColors.warning.withValues(alpha: 0.5) : AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.description_outlined, size: 20,
+              color: action ? AppColors.statusSoonText : AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('제출 서류',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                const SizedBox(height: 2),
+                Text(
+                  _docSummaryText(reg) ?? '',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: action ? AppColors.statusSoonText : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(sheetContext);
+              final changed = await context.push<bool>('/my-documents/$registrationId', extra: {
+                'contestName': reg['contestName'] ?? '',
+                'categoryName': reg['categoryName'] ?? '',
+              });
+              if (changed == true) ref.invalidate(myRegistrationsProvider);
+            },
+            child: Text(action ? '서류 올리기' : '서류 보기'),
+          ),
+        ],
       ),
     );
   }

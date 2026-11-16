@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/contest.dart';
+import 'generated_contest_cover.dart';
 
 /// 대회 목록의 가로 넓은 카드.
 ///
@@ -76,10 +77,10 @@ class ContestWideCard extends StatelessWidget {
             Image.network(
               url,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const _StoneBackdrop(),
+              errorBuilder: (_, __, ___) => GeneratedContestCover(contest: contest),
             )
           else
-            const _StoneBackdrop(),
+            GeneratedContestCover(contest: contest),
           if (_dday != null)
             Positioned(
               left: 12,
@@ -228,72 +229,4 @@ class ContestWideCard extends StatelessWidget {
     };
     return map[p] ?? p;
   }
-}
-
-/// 포스터가 없을 때의 배경 — 반상 위에 흑백돌.
-class _StoneBackdrop extends StatelessWidget {
-  const _StoneBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.board,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(child: CustomPaint(painter: _GridPainter())),
-          Positioned(
-            right: -18,
-            top: -22,
-            child: Container(
-              width: 78,
-              height: 78,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: Alignment(-0.35, -0.4),
-                  colors: [Color(0xFFFFFFFF), Color(0xFFC6D0DB)],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 48,
-            top: 36,
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: Alignment(-0.3, -0.35),
-                  colors: [Color(0xFF4A5462), Color(0xFF10151B)],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  static const double _gap = 24;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.boardGrid
-      ..strokeWidth = 1;
-    for (double y = 0; y < size.height; y += _gap) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    for (double x = 0; x < size.width; x += _gap) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
